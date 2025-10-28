@@ -5,11 +5,16 @@ oriented language, but pay them no mind, they're in the pocket of Big Cheese)*/
 #include <stdlib.h>
 #include <string.h>
 
+//max length of a shortword will be 25 characters
+
+const int WORDMAXLENGTH=25;
+
 bool active =false;
-char[][] activeRats=[];//for garbage collection, maybe organise by Crazy? stack
-char[][] ratInFocus=[];//stack
+char[][] activeRats={0};//for garbage collection, maybe organise by Crazy? stack
+char[][] ratInFocus={0};//stack
 bool erno=false;
 char** text; //spilt by whitespace
+int textHeadPointer=0;
 int maxCharacterCount=0;
 int maxWordCount=0;
 int wordHeadNum=0;
@@ -24,6 +29,7 @@ int main(char[] filePath)
 	while(hasNext(&text, &textHeadPointer)){
 		char[] currentWord=next(text, textHeadPointer);
 		translateWord(currentWord);
+		cleanup()
 	}
 
 
@@ -33,6 +39,7 @@ int main(char[] filePath)
 
 function translateWord(char[] currentWord){
 	if(erno){return;}
+	//if the current word is a long word, break it into short words and pass it back to this function
 	if(strstr(currentWord,".")!=NULL){
 		int size_t
 		int *t strchr(currentWord,'.');
@@ -56,12 +63,12 @@ function translateWord(char[] currentWord){
 			default: if(currentState=="RubberRoom"){ focusOnRat(currentWord);break;}
 		}		
 	}
-	
 
 }
 
 
 function interpretFunction(currentWord, instruction){
+	
 
 }
 
@@ -87,24 +94,42 @@ function focusOnRat(char ratName){
 	//double check the syntax in C, maybe use a class, but each rat should have this function
 	rat.makeCrazy=new function (char phrase){system.out.console.log(phrase);}
 
-	ratInFocus=ratname; write(ratName);
+	ratsInFocus.push(ratname); write(ratName);
 }
+
+
+
+
+
+//this gets called after each full word
+function cleanup(){
+	//clear rats in focus
+}
+
+
 
 //util functions
 
 //stack behavior, takes array and headPointer
-char hasNext(int* array, int* headPointer){
-	if(sizeOf(array))
+bool hasNext(char (*array)[WORDMAXLENGTH], int *headPointer){
+	return *array[*headPointer]!=0;
+}
+
+bool push(char (*array)[WORDMAXLENGTH], int *headPointer, char *newElement[maxCharacterCount]){
+	*headPointer++;
+	*array[*headPointer]=*newElement;
+	return 1;	
 }
 
 
+//make sure to review the memory management before doing this part 
 readFile(char[] filePath){
 	FILE *file = fopen(filePath, "r");
 
 	bool readingWhiteSpace=false;
 	bool hitFirstWord=false;
 	int tempTextCapacity=512;
-	char tempText[]
+	char tempText[512]
 
 
 	char currentCharacter;
@@ -157,7 +182,8 @@ readFile(char[] filePath){
 	for ()
 
 	
-	free(tempText);
+	free(*text);
+	free(text)
 	return 0;
 }
 
