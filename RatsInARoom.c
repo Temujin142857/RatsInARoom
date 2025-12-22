@@ -7,12 +7,15 @@ oriented language, but pay them no mind, they're in the pocket of Big Cheese)*/
 
 //max length of a shortword will be 25 characters
 
-const int WORDMAXLENGTH=25;
+const int MAXWORDLENGTH=25;
+const int MAXRATS=100;
 
-bool active =false;
-char[][] activeRats={0};//for garbage collection, maybe organise by Crazy? stack
-char[][] ratInFocus={0};//stack
-bool erno=false;
+int erno=0;//
+int active = 0;//bool to indicate if reader is active
+
+char activeRats[MAXRATS][MAXWORDLENGTH]={0};//for garbage collection, maybe organise by Crazy? stack
+char ratInFocus[MAXRATS][MAXWORDLENGTH]={0};//stack
+
 char** text; //spilt by whitespace
 int textHeadPointer=0;
 int maxCharacterCount=0;
@@ -21,7 +24,7 @@ int wordHeadNum=0;
 int characterHeadNum=0;
 
 
-int main(char[] filePath)
+int main(char filePath[])
 {
 	
 	
@@ -111,11 +114,11 @@ function cleanup(){
 //util functions
 
 //stack behavior, takes array and headPointer
-bool hasNext(char (*array)[WORDMAXLENGTH], int *headPointer){
+int hasNext(char (*array)[MAXWORDLENGTH], int *headPointer){
 	return *array[*headPointer]!=0;
 }
 
-bool push(char (*array)[WORDMAXLENGTH], int *headPointer, char *newElement[maxCharacterCount]){
+int push(char (*array)[MAXWORDLENGTH], int *headPointer, char *newElement[maxCharacterCount]){
 	*headPointer++;
 	*array[*headPointer]=*newElement;
 	return 1;	
