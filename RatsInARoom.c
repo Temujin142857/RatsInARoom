@@ -11,6 +11,7 @@ oriented language, but pay them no mind, they're in the pocket of Big Cheese)*/
 
 const int MAXWORDLENGTH=32;
 const int MAXRATS=144;
+const int MAXBUFFERLENGTH=1024;
 
 
 struct ccStack {
@@ -25,11 +26,18 @@ struct textStack {
 
 struct iStack {
 	int head;
-	int array[];
+	int *array;
+};
+
+struct outputBufferStack{
+	int head;
+	char array[1024];
 };
 
 int erno=0;//bool to detect if an error has occured in the program
 int active = 0;//bool to indicate if reader is active
+struct outputBufferStack outputBuffer={-1};
+char *outputFileName;
 
 
 struct ccStack activeRats={-1};//for garbage collection, maybe organise by Crazy?
@@ -149,6 +157,9 @@ int sIncludes(){
 
 }
 
+
+//rat specific functions
+
 int validateArgs(){
 
 }
@@ -231,8 +242,40 @@ struct textStack readFile(char filePath[]){
 // return (word*maxCharacterCount)+character
 
 
-int printToOutputFile(){
+int flushOutputBuffer(){
+	FILE *fptr;
+	//a is for append mode
+	fptr = fopen(outputFileName, "a");
+	printf("\nattempting to print: %s\n", outputBuffer.array);
+	fprintf(fptr, "%s" , outputBuffer.array);
+	fclose(fptr);
 
+	memset(outputBuffer.array, '\0', sizeof(outputBuffer.array));
+	outputBuffer.head=-1;
+	return 1;
+}
+
+int immediateFlush(){
+
+}
+
+int printToOutputBuffer(char string[]){
+	size_t incomingStringLength=strlen(string);
+	if(incomingStringLength>1024){
+		printf("why is the ouptut bigger than 1024 chars?");
+		//immediateFlush(string);
+		return 0;
+	}
+	else if((incomingStringLength+outputBuffer.head+1)>1024){
+		printf("why here?");
+		flushOutputBuffer();
+	};
+	printf("attampting to add: %s, to buffer\n", string);
+	for (int i = 0; i < incomingStringLength; i++){
+		outputBuffer.array[outputBuffer.head+1]=string[i];
+		outputBuffer.head++;
+	}
+	return 1;
 }
 
 
@@ -304,7 +347,6 @@ char *translateWord(char currentWord[]){//takes a word, returns a pointer to the
 
 int main(int argc, char *argv[]){
 	printf("active\n");
-	printf("%d\n", argc);
 	//validateArgs();
 	if (argc < 2) {
    		printf("No input file provided\n");
@@ -315,6 +357,31 @@ int main(int argc, char *argv[]){
 	for (int i = 0; i <= text.head; i++)
 	{
     	printf("line%d: %s\n", i, text.array[i]);
+	}
+	printf("\n");
+	
+	char *partialOutputFileName=strtok(argv[1],".");
+	int partialLength=strlen(partialOutputFileName);
+	char fullOutputFileName[partialLength+2];
+	for (int i = 0; i < partialLength; i++){
+		fullOutputFileName[i]=partialOutputFileName[i];
+	}
+	fullOutputFileName[partialLength]='.';
+	fullOutputFileName[partialLength+1]='c';
+	fullOutputFileName[partialLength+2]='\0';
+	printf("ouputFilename: %s\n",fullOutputFileName);
+	outputFileName=fullOutputFileName;
+	
+
+	if (remove(outputFileName) == 0) {
+        printf("Output File deleted successfully\n\n");
+    } else {
+        printf("Ouput file not already present\n\n");
+    }
+
+	for (int i = 0; i <= text.head; i++)
+	{
+    	printToOutputBuffer(text.array[i]);
 	}
 	
 	
@@ -333,6 +400,7 @@ int main(int argc, char *argv[]){
 		cleanup();
 	}
 	*/
+	flushOutputBuffer();
 	textFree(&text);
     return 0;  
 }
