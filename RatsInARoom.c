@@ -15,7 +15,7 @@ const int MAXRATS=144;
 
 struct ccStack {
 	int head;
-	char array[MAXRATS][MAXWORDLENGTH];
+	char **array;
 };
 
 struct textStack {
@@ -141,15 +141,17 @@ int validateArgs(){
 
 //make sure to review the memory management before doing this part 
 struct textStack readFile(char filePath[]){
+	printf("attempting to open file\n");
 	FILE *file = fopen(filePath, "r");
+	printf("opened file\n");
 
-	int readingWhiteSpace=0;
+	int readingWhiteSpace=1;
 	int hitFirstWord=0;
 	int wordCount=0;
 	int tempTextCapacity=512;
 	char *tempText=(char*)malloc(sizeof(char)*tempTextCapacity);
 	int *wordLengths=(int*)malloc(sizeof(int)*tempTextCapacity);
-	int globalCharacterCount=0;
+	int globalCharacterCount=-1;
 	int characterHeadNum=0;
 
 
@@ -159,13 +161,14 @@ struct textStack readFile(char filePath[]){
 		if(currentCharacter=='\n'){//fill in what == whiteSpace means
 			readingWhiteSpace=1;			
 		} else{
-			if(readingWhiteSpace==1){wordCount++;characterHeadNum=0;}
+			if(readingWhiteSpace==1&&hitFirstWord){wordLengths[wordCount]=characterHeadNum;wordCount++;characterHeadNum=0;}
 			readingWhiteSpace=0;
 			hitFirstWord=1;
 		}
 
 		if(!readingWhiteSpace){
-			globalCharacterCount++;			
+			globalCharacterCount++;		
+			characterHeadNum++;	
 
 			if (globalCharacterCount >= tempTextCapacity) {
 				tempTextCapacity = tempTextCapacity*2; 
@@ -179,20 +182,24 @@ struct textStack readFile(char filePath[]){
 					struct textStack failure= {-1};
 					return failure;
 				}
-        	}
-			characterHeadNum++;
-			tempText[(wordCount*MAXWORDLENGTH)+characterHeadNum]=currentCharacter;	
+        	}			
+			tempText[globalCharacterCount]=currentCharacter;						
 		}
 	}
+	wordLengths[wordCount]=characterHeadNum;
 	fclose(file);
+	printf("current text: %s\n",tempText);	
 
-	char **array = (int **)malloc(wordCount * sizeof(int *));
+	char **array = (char **)malloc((wordCount+1) * sizeof(char *));
 
 	int characterCount=0;
-	for (int i=0;i<wordCount;i++){
+	for (int i=0;i<=wordCount;i++){
 		array[i] = (char *)malloc(wordLengths[i] * sizeof(char));
+		printf("%d\n",i);
 		for (int j = 0; j < wordLengths[i]; j++){			
 			array[i][j]=tempText[characterCount];
+			printf("%c",array[i][j]);
+			//printf("%c",tempText[characterCount]);
 			characterCount++;
 		}
 	}
@@ -229,16 +236,20 @@ char lexicalAnalyser(char currentWord[]){
 }
 
 
+int throwSyntaxError(){
+
+}
+/*
 char *translateWord(char currentWord[]){//takes a word, returns a pointer to the char[] which should be printed into the compiled file
 	if(erno){return;}
 	//if the current word is a long word, break it into short words and pass it back to this function
-	if(strstr(currentWord,".")!=NULL){
-		int size_t;
-		int *t =strchr(currentWord,'.');
-		char firstWord[]=currentWord;
-		char restOfWord[]=currentWord+*t;
+	
+	char *t =strchr(currentWord,'.');
+	if(t!=NULL){
+		*t = '\0';
+    	t++; 
 		translateWord(currentWord);
-		translateWord(restOfWord);
+		translateWord(t);
 		return 0;
 	}	
 
@@ -254,18 +265,18 @@ char *translateWord(char currentWord[]){//takes a word, returns a pointer to the
 		case 1: interpretCrazy(); break;
 		case 2: if(currentState==1){currentState=2;}else{throwSyntaxError(2);}break;
 
-		case 11: if(currentState!=3){throwSyntaxError(10);break;}if(!ratHasValue(peek(ratsInFocus))){throwSyntaxError(11);break;}
-				printToOutputFile("printf(Value(RubberRoom[",peek(ratsInFocus), "]))");pop(ratsInFocus);currentState=99;break;
+		case 11: if(currentState!=3){throwSyntaxError(10);break;}if(!ratHasValue(iPeek(&ratsInFocus))){throwSyntaxError(11);break;}
+				printToOutputFile("printf(Value(RubberRoom[",iPeek(&ratsInFocus), "]))");iPop(&ratsInFocus);currentState=99;break;
 
-		case 12: if(currentState!=3){throwSyntaxError(10);break;}if(!peek(ratsInFocus)){throwSyntaxError(11);break;}
-				printToOutputFile("RubberRoom[", peek(ratsInFocus),"]=NULL");pop(ratsInFocus);currentState=99;break;	
+		case 12: if(currentState!=3){throwSyntaxError(10);break;}if(!iPeek(&ratsInFocus)){throwSyntaxError(11);break;}
+				printToOutputFile("RubberRoom[", iPeek(&ratsInFocus),"]=NULL");iPop(&ratsInFocus);currentState=99;break;	
 		
 		case 13: if(currentState!=3){throwSyntaxError(10);break;}				
 				char value[]="extracted value";
-				printToOutputFile("Save(RubberRoom[", peek(ratsInFocus), "],");
+				printToOutputFile("Save(RubberRoom[", iPeek(&ratsInFocus), "],");
 				//extract value from in brackets, note it might be a value taken from a rat, check that it's a string or int or float
 		
-		case 14: if(currentState!=3){throwSyntaxError(10);break;}if(!ratHasValue(peek(ratsInFocus))){throwSyntaxError(14);break;}
+		case 14: if(currentState!=3){throwSyntaxError(10);break;}if(!ratHasValue(iPeek(&ratsInFocus))){throwSyntaxError(14);break;}
 
 
 
@@ -273,13 +284,24 @@ char *translateWord(char currentWord[]){//takes a word, returns a pointer to the
 	}		
 }
 
+*/
 
-
-int main(char *argv[])
-{	
+int main(int argc, char *argv[]){
+	printf("active\n");
+	printf("%d\n", argc);
 	//validateArgs();
+	if (argc < 2) {
+   		printf("No input file provided\n");
+   		return 1;
+	}
 	struct textStack text=readFile(argv[1]);
-	printf(text.array);
+	printf("\n%d\n", text.head);
+	for (int i = 0; i <= text.head; i++)
+	{
+    	printf("line%d: %s\n", i, text.array[i]);
+	}
+	
+	
 
 	//print the constant functions:
 	//Value
