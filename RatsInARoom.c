@@ -130,6 +130,21 @@ int iPop(struct iStack *stack){
 	}  else{ return 0; } 
 }
 
+void textFree(struct textStack *text)
+{
+    if (!text || !text->array) return;
+
+    for (size_t i = 0; i < text->head; i++) {
+        free(text->array[i]);
+    }
+
+    free(text->array);
+
+    // defensive: prevent use-after-free
+    text->array = NULL;
+    text->head = 0;
+}
+
 int sIncludes(){
 
 }
@@ -141,9 +156,9 @@ int validateArgs(){
 
 //make sure to review the memory management before doing this part 
 struct textStack readFile(char filePath[]){
-	printf("attempting to open file\n");
+	printf("attempting to open file: %s\n", filePath);
 	FILE *file = fopen(filePath, "r");
-	printf("opened file\n");
+	printf("successfully opened file\n");
 
 	int readingWhiteSpace=1;
 	int hitFirstWord=0;
@@ -187,27 +202,28 @@ struct textStack readFile(char filePath[]){
 		}
 	}
 	wordLengths[wordCount]=characterHeadNum;
+	wordCount++;
 	fclose(file);
-	printf("current text: %s\n",tempText);	
 
-	char **array = (char **)malloc((wordCount+1) * sizeof(char *));
+	char **array = (char **)malloc((wordCount) * sizeof(char *));
 
 	int characterCount=0;
-	for (int i=0;i<=wordCount;i++){
-		array[i] = (char *)malloc(wordLengths[i] * sizeof(char));
-		printf("%d\n",i);
-		for (int j = 0; j < wordLengths[i]; j++){			
+	for (int i=0;i<wordCount;i++){
+		array[i] = (char *)malloc((wordLengths[i]+1) * sizeof(char));
+		for (int j = 0; j < wordLengths[i]; j++){		
 			array[i][j]=tempText[characterCount];
-			printf("%c",array[i][j]);
-			//printf("%c",tempText[characterCount]);
 			characterCount++;
 		}
-	}
+		array[i][wordLengths[i]]='\0';
+	}	
 
 	free(tempText);
 	free(wordLengths);
+
 	//put tempText into the text stack
-    struct textStack text = {wordCount, array};
+    struct textStack text = {wordCount-1, array};	
+	array=NULL;
+	
 	return text;
 }
 
@@ -295,7 +311,7 @@ int main(int argc, char *argv[]){
    		return 1;
 	}
 	struct textStack text=readFile(argv[1]);
-	printf("\n%d\n", text.head);
+	printf("\namount of lines in text: %d\n", text.head+1);
 	for (int i = 0; i <= text.head; i++)
 	{
     	printf("line%d: %s\n", i, text.array[i]);
@@ -317,8 +333,7 @@ int main(int argc, char *argv[]){
 		cleanup();
 	}
 	*/
-	free(text.array);
-
+	textFree(&text);
     return 0;  
 }
 
