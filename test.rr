@@ -1,0 +1,5 @@
+Crazy?;
+RubberRoom.spawnRat("rat1");
+RubberRoom.rat1.hold("hello world");
+RubberRoom.rat1.speak();
+Crazy?;
