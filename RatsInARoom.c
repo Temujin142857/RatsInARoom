@@ -134,6 +134,10 @@ int sIncludes(){
 
 }
 
+int validateArgs(){
+
+}
+
 
 //make sure to review the memory management before doing this part 
 struct textStack readFile(char filePath[]){
@@ -152,7 +156,7 @@ struct textStack readFile(char filePath[]){
 	char currentCharacter;
 	while ((currentCharacter = fgetc(file)) != EOF){
 		
-		if(currentCharacter==whiteSpace){//fill in what == whiteSpace means
+		if(currentCharacter=='\n'){//fill in what == whiteSpace means
 			readingWhiteSpace=1;			
 		} else{
 			if(readingWhiteSpace==1){wordCount++;characterHeadNum=0;}
@@ -194,6 +198,7 @@ struct textStack readFile(char filePath[]){
 	}
 
 	free(tempText);
+	free(wordLengths);
 	//put tempText into the text stack
     struct textStack text = {wordCount, array};
 	return text;
@@ -270,11 +275,11 @@ char *translateWord(char currentWord[]){//takes a word, returns a pointer to the
 
 
 
-int main(char filePath[])
+int main(char *argv[])
 {	
-
-	readFile(filePath);
-
+	//validateArgs();
+	struct textStack text=readFile(argv[1]);
+	printf(text.array);
 
 	//print the constant functions:
 	//Value
