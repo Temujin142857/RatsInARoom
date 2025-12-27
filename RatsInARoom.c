@@ -12,11 +12,55 @@ oriented language, but pay them no mind, they're in the pocket of Big Cheese)*/
 const int MAXWORDLENGTH=32;
 const int MAXRATS=144;
 const int MAXBUFFERLENGTH=1024;
+const int AMOUNTOFSYMBOLS=8;
+
+const char symbols[AMOUNTOFSYMBOLS][10]={"Crazy?","RubberRoom", "speak", "kill", "hold", "take", "instruct", "do" };
+
+const int symbolsFoot=1;
+const int iRatsFoot=symbolsFoot+AMOUNTOFSYMBOLS;
+const int literalsFoot=iRatsFoot+MAXRATS;
+/*
+int iLiteralsFoot=iRatsFoot+MAXRATS;
+int cLiteralsFoot=iRatsFoot+MAXRATS+1;
+int SLiteralsFoot=iRatsFoot+MAXRATS+2;
+int fLiteralsFoot=iRatsFoot+MAXRATS+3;
+*/
+
+struct rat {
+	char* name;
+	int valueType;
+	//0 for no valueType
+	//1 for int
+	//2 for string
+
+	int functionType;
+	int *functionParams;
+	//0 for no params
+	//1 for int
+	//2 for string
+	//9 for rat
+
+};
+
+struct ratStack {
+	char **array;
+	int head;
+};
 
 
 struct ccStack {
 	int head;
 	char **array;
+};
+
+struct cStack{
+	int head;
+	char *array;
+};
+
+struct fStack{
+	int head;
+	float *array;
 };
 
 struct textStack {
@@ -40,14 +84,21 @@ struct outputBufferStack outputBuffer={-1};
 char *outputFileName;
 
 
-struct ccStack activeRats={-1};//for garbage collection, maybe organise by Crazy?
+struct ratStack rats={-1};//for garbage collection, maybe organise by Crazy?
 struct iStack ratsInFocus={-1};
 struct iStack currentValues={-1};
 
+struct iStack iLiterals={-1};
+struct ccStack sLiterals={-1};
+struct cStack cLiterals={-1};
+struct fStack fLiterals={-1};
+/* literal sorage will follow the following logic:
+token=symbolsFoot + 4*indexInStorage+(0 or 1 or 2 or 3) depending on if it's int, string, char or float
+Retreival will work like indexInStorage=(token-symbolsFoot)%4 determine if it's int, string, char or float, use floor(token/4) to deternime it's indexInStorage
+*/
 
 
 int bracketDepth=0;
-
 
 int currentState=0;
 //2 is in the rubber room
@@ -138,6 +189,7 @@ int iPop(struct iStack *stack){
 	}  else{ return 0; } 
 }
 
+//release the memory of a textstack
 void textFree(struct textStack *text)
 {
     if (!text || !text->array) return;
@@ -163,6 +215,8 @@ int sIncludes(){
 int validateArgs(){
 
 }
+
+
 
 
 //make sure to review the memory management before doing this part 
@@ -284,14 +338,22 @@ char lexicalAnalyser(char currentWord[]){
 	switch(currentWord[0]){
 		case 'C': if(strcmp(currentWord, "Crazy?")==0){return 1;}break;
 		case 'R': if(strcmp(currentWord, "RubberRoom")==0){return 2;}break;
-		case 's': if(strcmp(currentWord, "speak")==0){return 11;}break;
-		case 'k': if(strcmp(currentWord, "kill")==0){return 12;}break;
-		case 'h': if(strcmp(currentWord, "hold")==0){return 13;}break;
-		case 't': if(strcmp(currentWord, "take")==0){return 14;}break;
-		case 'i': if(strcmp(currentWord, "instruct")==0){return 15;}break;
-		case 'd': if(strcmp(currentWord, "do")==0){return 16;}break;
-		default: return 0;break;		
+		case 's': if(strcmp(currentWord, "speak")==0){return 3;}break;
+		case 'k': if(strcmp(currentWord, "kill")==0){return 4;}break;
+		case 'h': if(strcmp(currentWord, "hold")==0){return 5;}break;
+		case 't': if(strcmp(currentWord, "take")==0){return 6;}break;
+		case 'i': if(strcmp(currentWord, "instruct")==0){return 7;}break;
+		case 'd': if(strcmp(currentWord, "do")==0){return 8;}break;
+		case '\"':break;		
+		case '\'':break;
 	}
+	if(isDigit(currentWord[0])){
+		//int case
+		//float case
+	} else if(isAlpha(currentWord[0])){
+	    //ratCase
+	}
+	return 0;
 }
 
 
