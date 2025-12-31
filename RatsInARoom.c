@@ -10,16 +10,23 @@ oriented language, but pay them no mind, they're in the pocket of Big Cheese)*/
 //max length of a shortword will be 25 characters
 
 const int MAXWORDLENGTH=32;
-const int MAXRATS=144;
 const int MAXBUFFERLENGTH=1024;
 const int AMOUNTOFSYMBOLS=8;
+
+const int iIdentifier=0;
+const int cIdentifier=1;
+const int sIdentifier=2;
+const int fIdentifier=3;
+const int rIdentifier=4;
+const int identifierNum=5;
+
 
 const char symbols[AMOUNTOFSYMBOLS][10]={"Crazy?","RubberRoom", "speak", "kill", "hold", "take", "instruct", "do" };
 
 const int symbolsFoot=1;
-const int iRatsFoot=symbolsFoot+AMOUNTOFSYMBOLS;
-const int literalsFoot=iRatsFoot+MAXRATS;
+const int variablesFoot=symbolsFoot+AMOUNTOFSYMBOLS;
 /*
+const int literalsFoot=iRatsFoot+MAXRATS;
 int iLiteralsFoot=iRatsFoot+MAXRATS;
 int cLiteralsFoot=iRatsFoot+MAXRATS+1;
 int SLiteralsFoot=iRatsFoot+MAXRATS+2;
@@ -84,7 +91,7 @@ struct outputBufferStack outputBuffer={-1};
 char *outputFileName;
 
 
-struct ratStack rats={-1};//for garbage collection, maybe organise by Crazy?
+struct ratStack activeRats={-1};//for garbage collection, maybe organise by Crazy?
 struct iStack ratsInFocus={-1};
 struct iStack currentValues={-1};
 
@@ -125,20 +132,12 @@ int textHasNext(struct textStack *stack){
 }
 
 int ccPush(struct ccStack *stack, char newElement[MAXWORDLENGTH]){
-	if (stack->head >= MAXRATS - 1) {
-        return 0; //stack overflow
-    }
-
 	stack->head++;
 	strcpy(stack->array[stack->head],newElement);
 	return 1;	
 }
 
 int textPush(struct textStack *stack, char newElement[MAXWORDLENGTH]){
-	if (stack->head >= MAXRATS - 1) {
-        return 0; //stack overflow
-    }
-
 	stack->head++;
 	strcpy(stack->array[stack->head],newElement);
 	return 1;	
@@ -219,7 +218,6 @@ int validateArgs(){
 
 
 
-//make sure to review the memory management before doing this part 
 struct textStack readFile(char filePath[]){
 	printf("attempting to open file: %s\n", filePath);
 	FILE *file = fopen(filePath, "r");
@@ -332,32 +330,114 @@ int printToOutputBuffer(char string[]){
 	return 1;
 }
 
+int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
+	int newLine=1;
+	int currentState=0;
+	char expectedToken;
+	for (size_t i = 0; i < inputText.head+1; i++)
+	{
+		if(newLine){
+			//check for R or C, otherwise throw error
+		} 
+		switch (currentState){
+			case 1:// expect ;
+			break;
 
-//speak, kill, hold, take, instruct, do
-char lexicalAnalyser(char currentWord[]){
+			case 2://expect .
+			break;
+
+			case 99://expect .symbol
+			break;
+
+			case 3://expect ();
+			break;
+
+			case 4://expect ();
+			break;
+
+			case 5://expect ();
+			break;
+
+			case 6://expect ();
+			break;
+
+			case 7://expect ();
+			break;
+
+			case 8://expect ();
+			break;
+
+			case 9://expect ();
+			break;
+
+			case 32://expect ();
+			break;
+
+			case 33://expect ();
+			break;
+
+			case 34://expect ();
+			break;
+
+			case 35://expect ();
+			break;
+
+			case 64://expect ();
+			break;
+
+			case 65://expect ();
+			break;
+		}
+		
+		
+	}
+	
+}
+
+
+//This one would have taken a token and replaced it with it's numeric value
+//but I didn't have a great splitting method, so I used character by character analysis instead
+int lexicalTokenAnalyser(char currentWord[]){
+
 	switch(currentWord[0]){
 		case 'C': if(strcmp(currentWord, "Crazy?")==0){return 1;}break;
 		case 'R': if(strcmp(currentWord, "RubberRoom")==0){return 2;}break;
-		case 's': if(strcmp(currentWord, "speak")==0){return 3;}break;
+		case 's': if(strcmp(currentWord, "speak")==0){return 3;}
+				else if(strcmp(currentWord, "show")==0){return 6;}break;
 		case 'k': if(strcmp(currentWord, "kill")==0){return 4;}break;
 		case 'h': if(strcmp(currentWord, "hold")==0){return 5;}break;
-		case 't': if(strcmp(currentWord, "take")==0){return 6;}break;
-		case 'i': if(strcmp(currentWord, "instruct")==0){return 7;}break;
-		case 'd': if(strcmp(currentWord, "do")==0){return 8;}break;
-		case '\"':break;		
-		case '\'':break;
+		case 't': if(strcmp(currentWord, "take")==0){return 7;}break;
+		case 'i': if(strcmp(currentWord, "instruct")==0){return 8;}break;
+		case 'd': if(strcmp(currentWord, "do")==0){return 9;}break;
+		case '\"': if(currentWord[strlen(currentWord)-1]=='\"'){ccPush(&sLiterals, currentWord); return sLiterals.head*identifierNum+sIdentifier+variablesFoot;} 
+			else{throwSyntaxError("string not terminated by \"", currentWord); return 0;}		
+		case '\'': if(currentWord[strlen(currentWord)-1]=='\''){ccPush(&sLiterals, currentWord); return cLiterals.head*identifierNum+cIdentifier+variablesFoot;} 
+			else{throwSyntaxError("character not terminated by \'", currentWord); return 0;}	
+
 	}
 	if(isDigit(currentWord[0])){
-		//int case
-		//float case
-	} else if(isAlpha(currentWord[0])){
-	    //ratCase
+		int foundDot=0;
+		for (size_t i = 0; i < strlen(currentWord); i++)
+		{
+			if(!isDigit(currentWord[i])){
+				if(currentWord[i]=='.'&&!foundDot){foundDot=1;}
+				else if(currentWord[i]=='.'&&foundDot){throwSyntaxError("multiple . in number ");return 0;}
+				else {throwSyntaxError("invalid character in number", currentWord); return 0;}
+			}
+		}
+		if (!foundDot){return iLiterals.head*identifierNum+iIdentifier+variablesFoot;}
+		else {return fLiterals.head*identifierNum+fIdentifier+variablesFoot;}
+	} 
+	else if(isAlpha(currentWord[0])){
+	    rPush(&activeRats, currentWord);
+		return activeRats.head*identifierNum+variablesFoot+rIdentifier;
 	}
+	throwSyntaxError("unrecognizable token", currentWord);
 	return 0;
 }
 
 
-int throwSyntaxError(){
+int throwSyntaxError(char message[], char token[]){
 
 }
 /*
@@ -445,6 +525,12 @@ int main(int argc, char *argv[]){
 	{
     	printToOutputBuffer(text.array[i]);
 	}
+
+	for (size_t i = 0; i < text.head+1; i++)
+	{
+		lexicalAnalyser(text.array[i]);
+	}
+	
 	
 	
 
