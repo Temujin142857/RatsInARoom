@@ -262,13 +262,14 @@ int paramsAnalyser(char params[], int *output[], int single){
 				temp3[j]=params[i];
 			}
 			if (strcmp(temp3,"show")==0){
-
+				//check if next two characters are (), push SHOW to ouput, push OPENBRACKET, push CLOSEBRACKET
+				//return 1 for success
 			} 
 			else if (strcmp(temp3,"take")==0){
 
 			}
 			else if (strcmp(temp3,"do")==0){
-
+				//recursive
 			}
 			else {throwSyntaxError("invalid params", params);return 0;}
 
