@@ -201,19 +201,20 @@ int printToOutputBuffer(char string[]){
 //good start, not complete
 int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 	int state=0;
-	char endingToken;
 	int lineCount=0;
 	int characterCount=0;
 	int expectingDot=0;
 
 	for (size_t i = 0; i < inputText.head+1; i++)
 	{		
+		characterCount++;
 		if(inputText.array[i]=='.'){
 			if(expectingDot){outputText->head++;outputText->array[outputText->head]=DOT;expectingDot=0;}
 			else{throwLexicalError("invalid spot for a .", lineCount, characterCount);}		
 			continue;
 		}
 		switch (state){
+
 			//newline expected
 			case SEMICOLON: 
 				if(inputText.array[i]==';'){outputText->head++;outputText->array[outputText->head]=SEMICOLON; state=0; lineCount++; characterCount=0;}
@@ -227,7 +228,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					for (size_t j = 0; j < wordlength; j++)
 					{
 						temp[j]=inputText.array[i];
-						if(j<wordlength-1){i++;}
+						if(j<wordlength-1){i++; characterCount++;}
 					}
 					int token= lexicalTokenAnalyser(temp);
 					if(token==CRAZY) {outputText->head++;outputText->array[outputText->head]=token;state=SEMICOLON;}							
@@ -239,7 +240,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					for (size_t j = 0; j < wordlength; j++)
 					{
 						temp[j]=inputText.array[i];
-						if(j<wordlength-1){i++;}
+						if(j<wordlength-1){i++;characterCount++;}
 					}
 					int token= lexicalTokenAnalyser(temp);
 					if(token==RUBBERROOM) {outputText->head++;outputText->array[outputText->head]=token;state=RUBBERROOM;expectingDot=1;}							
@@ -258,6 +259,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					temp[j]=inputText.array[i];
 					j++;
 					i++;
+					characterCount++;
 				}				
 				
 				int token=lexicalTokenAnalyser(temp);
@@ -271,7 +273,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 			//following Spawn
 			case SPAWN:
 				//making sure it starts witih (
-				if(inputText.array[i]=='('){i++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
+				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
 				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
@@ -284,6 +286,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					temp[j]=inputText.array[i];
 					j++;
 					i++;
+					characterCount++;
 				}
 
 				int token=lexicalTokenAnalyser(temp);
@@ -292,7 +295,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 				outputText->array[outputText->head]=token;
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
+				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 				state=SEMICOLON;
 				break;	
 
@@ -305,6 +308,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					temp[j]=inputText.array[i];
 					j++;
 					i++;
+					characterCount++;
 				}
 				int token= lexicalTokenAnalyser(temp);
 				state=token;	
@@ -315,7 +319,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 			//following speak	
 			case SPEAK:
 				//making sure it starts witih (
-				if(inputText.array[i]=='('){i++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
+				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
 				else{throwLexicalError("invalid token: speak must have brackets", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
@@ -328,18 +332,19 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					temp[j]=inputText.array[i];
 					j++;
 					i++;
+					characterCount++;
 				}
 				if(strlen(temp)!=1){throwLexicalError("speak should have empty params", lineCount, characterCount);}
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
+				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 				state=SEMICOLON;
 				break;	
 
 			//following kill
 			case KILL:
 				//making sure it starts witih (
-				if(inputText.array[i]=='('){i++;outputText->head++;outputText->array[outputText->head]='(';}
+				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]='(';}
 				else{throwLexicalError("invalid token: kill must have brackets", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
@@ -352,18 +357,19 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					temp[j]=inputText.array[i];
 					j++;
 					i++;
+					characterCount++;
 				}
 				if(strlen(temp)!=1){throwLexicalError("kill should have empty params", lineCount, characterCount);}
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
+				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 				state=SEMICOLON;
 				break;
 
 			//following hold
 			case HOLD:
 				//making sure it starts witih (
-				if(inputText.array[i]=='('){i++;outputText->head++;outputText->array[outputText->head]='(';}
+				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]='(';}
 				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
@@ -378,7 +384,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					else if(inputText.array[i]==')'){depth--;}
 					temp[j]=inputText.array[i];
 					j++;
-					i++;
+					i++;characterCount++;
 				}
 				int token=lexicalTokenAnalyser(temp);
 				
@@ -387,7 +393,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 			
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;outputText->head++;outputText->array[outputText->head]=')';}
+				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=')';}
 
 				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;
