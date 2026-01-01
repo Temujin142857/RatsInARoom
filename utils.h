@@ -12,12 +12,14 @@ struct rat {
 	//0 for no params
 	//1 for int
 	//2 for string
-	//9 for rat
+	//3 for char
+	//4 for float
+	//note you cannot put a rat in a rat
 
 };
 
 struct ratStack {
-	char **array;
+	struct rat *array;
 	int head;
 };
 

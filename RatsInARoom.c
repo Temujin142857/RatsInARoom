@@ -203,7 +203,7 @@ int throwSyntaxError(char message[], char token[]){
 
 }
 
-int paramsAnalyser(char params[], int single){
+int paramsAnalyser(char params[], int *output[], int single){
 	if(single){
 		int length=strlen(params);
 		if(params[0]== '\"'){
@@ -212,7 +212,7 @@ int paramsAnalyser(char params[], int single){
 		}	
 		else if(params[0]=='\''){if(params[length-1]=='\''&&length==3){int location =cPush(&cLiterals, params); return location*identifierNum+cIdentifier+variablesFoot;} 
 			else{throwSyntaxError("invalid character literal", params); return 0;}	
-		}
+		}		
 		else if(isDigit(params[0])){
 			int foundDot=0;
 			for (size_t i = 0; i < strlen(params); i++)
@@ -228,6 +228,50 @@ int paramsAnalyser(char params[], int single){
 		} 
 		//TODO Implement hashing
 		else if(isAlpha(params[0])){
+			//first make sure it starts with RubberRoom.
+			const int wordlength=10; char temp[wordlength];
+			for (size_t i = 0; i < wordlength; i++)
+			{
+				temp[i]=params[i];
+			}
+			int token= lexicalTokenAnalyser(temp);
+			if(token!=RUBBERROOM||params[10]!='.'){throwSyntaxError("invalid params", params);return 0;}
+			output[0]=RUBBERROOM;
+			output[1]=DOT;
+
+			//then check it has a valid rat and ends in .
+			int i=11;
+			int j=0;
+			char temp2[MAXWORDLENGTH];
+			while(params[i]!='.'){
+				temp2[j]=params[i];
+				j++;
+				i++;
+				if(i>length-1){throwSyntaxError("invalid params", params);return 0;}
+			}
+			i++;
+			int token= lexicalTokenAnalyser(temp);
+			if(token<variablesFoot||(token-variablesFoot)%identifierNum!=rIdentifier||token>activeRats.head){throwSyntaxError("invalid params", params);return 0;}
+			output[2]=token;
+
+			//check if it's do, take or show
+			char temp3[10];
+			j=0;
+			while(params[i]!='('){
+				if(i>length-1){throwSyntaxError("invalid params", params);return 0;}
+				temp3[j]=params[i];
+			}
+			if (strcmp(temp3,"show")==0){
+
+			} 
+			else if (strcmp(temp3,"take")==0){
+
+			}
+			else if (strcmp(temp3,"do")==0){
+
+			}
+			else {throwSyntaxError("invalid params", params);return 0;}
+
 	    	int location =rPush(&activeRats, params);
 			return location*identifierNum+variablesFoot+rIdentifier;
 		}
