@@ -5,6 +5,7 @@ oriented language, but pay them no mind, they're in the pocket of Big Cheese)*/
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <utils.h>
 
 
 
@@ -12,7 +13,7 @@ oriented language, but pay them no mind, they're in the pocket of Big Cheese)*/
 
 const int MAXWORDLENGTH=32;
 const int MAXBUFFERLENGTH=1024;
-const int AMOUNTOFSYMBOLS=8;
+const int AMOUNTOFSYMBOLS=14;
 
 const int iIdentifier=0;
 const int cIdentifier=1;
@@ -22,7 +23,21 @@ const int rIdentifier=4;
 const int identifierNum=5;
 
 
-const char symbols[AMOUNTOFSYMBOLS][10]={"Crazy?","RubberRoom", "speak", "kill", "hold", "take", "instruct", "do" };
+const char symbols[AMOUNTOFSYMBOLS][10]={";", "Crazy?","RubberRoom", "speak", "kill", "hold", "show", "take", "instruct", "do", "spawn", ".", "(", ")" };
+const int SEMICOLON=-1;
+const int CRAZY=1;
+const int RUBBERROOM=2;
+const int SPEAK=3;
+const int KILL=4;
+const int HOLD=5;
+const int SHOW=6;
+const int TAKE=7;
+const int INSTRUCT=8;
+const int DO=9;
+const int SPAWN=10;
+const int DOT=11;
+const int OPENBRACKET=12;
+const int CLOSEBRACKET=13;
 
 const int symbolsFoot=1;
 const int variablesFoot=symbolsFoot+AMOUNTOFSYMBOLS;
@@ -34,57 +49,7 @@ int SLiteralsFoot=iRatsFoot+MAXRATS+2;
 int fLiteralsFoot=iRatsFoot+MAXRATS+3;
 */
 
-struct rat {
-	char* name;
-	int valueType;
-	//0 for no valueType
-	//1 for int
-	//2 for string
 
-	int functionType;
-	int *functionParams;
-	//0 for no params
-	//1 for int
-	//2 for string
-	//9 for rat
-
-};
-
-struct ratStack {
-	char **array;
-	int head;
-};
-
-
-struct ccStack {
-	int head;
-	char **array;
-};
-
-struct cStack{
-	int head;
-	char *array;
-};
-
-struct fStack{
-	int head;
-	float *array;
-};
-
-struct textStack {
-	int head;
-	char **array;
-};
-
-struct iStack {
-	int head;
-	int *array;
-};
-
-struct outputBufferStack{
-	int head;
-	char array[1024];
-};
 
 int erno=0;//bool to detect if an error has occured in the program
 int active = 0;//bool to indicate if reader is active
@@ -100,13 +65,12 @@ struct iStack iLiterals={-1};
 struct ccStack sLiterals={-1};
 struct cStack cLiterals={-1};
 struct fStack fLiterals={-1};
-/* literal sorage will follow the following logic:
+/* literal storage will follow the following logic:
 token=symbolsFoot + 4*indexInStorage+(0 or 1 or 2 or 3) depending on if it's int, string, char or float
 Retreival will work like indexInStorage=(token-symbolsFoot)%4 determine if it's int, string, char or float, use floor(token/4) to deternime it's indexInStorage
 */
 
 
-int bracketDepth=0;
 
 int currentState=0;
 //2 is in the rubber room
@@ -116,117 +80,11 @@ int currentState=0;
 //99 is expecting endline
 
 
-
-//util functions
-
-
-
-//stack behavior, takes array and headPointer
-int iHasNext(struct iStack *stack){
-	return stack->head!=-1&&stack->array[stack->head]!=0;
-}
-
-int ccHasNext(struct ccStack *stack){
-	return stack->head!=-1&&stack->array[stack->head]!=0;
-}
-
-int textHasNext(struct textStack *stack){
-	return stack->head!=-1&&stack->array[stack->head]!=0;
-}
-
-int ccPush(struct ccStack *stack, char newElement[]){
-	stack->head++;
-	strcpy(stack->array[stack->head],newElement);
-	return 1;	
-}
-
-unsigned int rPush(struct rStack *stack, char newElement[]){
-	unsigned long hasValue=hash(newElement);
-}
-
-int textPush(struct textStack *stack, char newElement[]){
-	stack->head++;
-	strcpy(stack->array[stack->head],newElement);
-	return 1;	
-}
-
-char* ccPeek(struct ccStack *stack){
-	if(stack->head!=-1){
-		return stack->array[stack->head];
-	}  else{ return 0; } 
-}
-
-char* textPeek(struct textStack *stack){
-	if(stack->head!=-1){
-		return stack->array[stack->head];
-	}  else{ return 0; } 
-}
-
-int iPeek(struct iStack *stack){
-	if(stack->head!=-1){
-		return stack->array[stack->head];
-	} else{ return 0; } 
-}
-
-char* ccPop(struct ccStack *stack){
-	if(stack->head!=-1){
-		char* temp= stack->array[stack->head];
-		strcpy(stack->array[stack->head],"");
-		stack->head--;
-		return temp;
-	}  else{ return 0; } 
-}
-
-char* textPop(struct textStack *stack){
-	if(stack->head!=-1){
-		char* temp= stack->array[stack->head];
-		strcpy(stack->array[stack->head],"");
-		stack->head--;
-		return temp;
-	}  else{ return 0; } 
-}
-
-int iPop(struct iStack *stack){
-	if(stack->head!=-1){
-		int temp= stack->array[stack->head];
-		stack->array[stack->head]=0;
-		stack->head--;
-		return temp;
-	}  else{ return 0; } 
-}
-
-//release the memory of a textstack
-void textFree(struct textStack *text)
-{
-    if (!text || !text->array) return;
-
-    for (size_t i = 0; i < text->head; i++) {
-        free(text->array[i]);
-    }
-
-    free(text->array);
-
-    // defensive: prevent use-after-free
-    text->array = NULL;
-    text->head = 0;
-}
-
-int sIncludes(){
-
-}
-
-// end of util functions
-
-
-//rat specific functions
-
 int validateArgs(){
 
 }
 
-
-
-
+//working and done
 struct textStack readFile(char filePath[]){
 	printf("attempting to open file: %s\n", filePath);
 	FILE *file = fopen(filePath, "r");
@@ -320,6 +178,7 @@ int immediateFlush(){
 
 }
 
+//working and done
 int printToOutputBuffer(char string[]){
 	size_t incomingStringLength=strlen(string);
 	if(incomingStringLength>1024){
@@ -339,27 +198,26 @@ int printToOutputBuffer(char string[]){
 	return 1;
 }
 
-int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
+//good start, not complete
+int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 	int state=0;
 	char endingToken;
 	int lineCount=0;
 	int characterCount=0;
-	char cleanText[inputText.head];
-	int cleanTextHead=-1;
 	int expectingDot=0;
 
 	for (size_t i = 0; i < inputText.head+1; i++)
 	{		
 		if(inputText.array[i]=='.'){
-			if(expectingDot){cleanTextHead++;cleanText[cleanTextHead]='.';expectingDot=0;}
-			else{throwLexicalError("invalid token", lineCount, characterCount);}		
+			if(expectingDot){outputText->head++;outputText->array[outputText->head]=DOT;expectingDot=0;}
+			else{throwLexicalError("invalid spot for a .", lineCount, characterCount);}		
 			continue;
 		}
 		switch (state){
 			//newline expected
-			case -1: 
-				if(inputText.array[i]==';'){cleanText[cleanTextHead+1]=';'; state=0; lineCount++; characterCount=0;}
-				else {throwLexicalError("invalid token", lineCount, characterCount);}
+			case SEMICOLON: 
+				if(inputText.array[i]==';'){outputText->head++;outputText->array[outputText->head]=SEMICOLON; state=0; lineCount++; characterCount=0;}
+				else {throwLexicalError("expecting a semicolon", lineCount, characterCount);}
 				break;	
 
 			//following newline	
@@ -372,7 +230,7 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 						if(j<wordlength-1){i++;}
 					}
 					int token= lexicalTokenAnalyser(temp);
-					if(token==1) {cleanTextHead++;cleanText[cleanTextHead]=(char)token;state=-1;}							
+					if(token==CRAZY) {outputText->head++;outputText->array[outputText->head]=token;state=SEMICOLON;}							
 					else {throwLexicalError("invalid token", lineCount, characterCount);}
 					break;	
 				}
@@ -384,7 +242,7 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 						if(j<wordlength-1){i++;}
 					}
 					int token= lexicalTokenAnalyser(temp);
-					if(token==2) {cleanTextHead++;cleanText[cleanTextHead]=(char)token;state=2;expectingDot=1;}							
+					if(token==RUBBERROOM) {outputText->head++;outputText->array[outputText->head]=token;state=RUBBERROOM;expectingDot=1;}							
 					else {throwLexicalError("invalid token", lineCount, characterCount);}
 					break;	
 				}
@@ -392,7 +250,7 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 				break; 
 
 			//following RubberRoom
-			case 2:
+			case RUBBERROOM:
 				char temp[MAXWORDLENGTH];
 				int j=0;
 				while (inputText.array[i]!='.'&&inputText.array[i]!='(')
@@ -401,21 +259,19 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 					j++;
 					i++;
 				}				
-				char token[3];
-				sprintf(token,"%d",lexicalTokenAnalyser(temp));
-				if(token==98){state=98;}else {/*maybe check if the rat (the token) exists*/state=99;expectingDot=1;}
-				for (size_t k = 0; k < strlen(token); k++)
-				{
-					cleanTextHead++;
-					cleanText[cleanTextHead]=token[k];
-				}			
-				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
+				
+				int token=lexicalTokenAnalyser(temp);
+				if(token==0){throwLexicalError("Invalid rat", lineCount, characterCount);}
+				if(token==SPAWN){state=SPAWN;}else {/*maybe check if the rat (the token) exists*/state=99;expectingDot=1;}
+				outputText->head++;
+				outputText->array[outputText->head]=token;
+
 				break;	
 
 			//following Spawn
-			case 98:
+			case SPAWN:
 				//making sure it starts witih (
-				if(inputText.array[i]=='('){i++;cleanTextHead++;cleanText[cleanTextHead]='(';}
+				if(inputText.array[i]=='('){i++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
 				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
@@ -429,18 +285,15 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 					j++;
 					i++;
 				}
-				char token[100];
-				sprintf(token,"%d",lexicalTokenAnalyser(temp));
-				for (size_t k = 0; k < strlen(token); k++)
-				{
-					cleanTextHead++;
-					cleanText[cleanTextHead]=token[k];
-				}	 
+
+				int token=lexicalTokenAnalyser(temp);
+				if(token==0){throwLexicalError("invalid spawn parameter",lineCount, characterCount);}
+				outputText->head++;
+				outputText->array[outputText->head]=token;
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;cleanTextHead++;cleanText[cleanTextHead]=')';}
-
-				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
+				if(inputText.array[i]==')'){i++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
+				state=SEMICOLON;
 				break;	
 
 			//following a rat	
@@ -455,15 +308,15 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 				}
 				int token= lexicalTokenAnalyser(temp);
 				state=token;	
-				cleanText[cleanTextHead+1]=(char) token;		 	
-				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
+				outputText->array[outputText->head]=token;		 	
+				if(2<state<10){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;	
 
 			//following speak	
-			case 3:
+			case SPEAK:
 				//making sure it starts witih (
-				if(inputText.array[i]=='('){i++;cleanTextHead++;cleanText[cleanTextHead]='(';}
-				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
+				if(inputText.array[i]=='('){i++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
+				else{throwLexicalError("invalid token: speak must have brackets", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
 				char temp[MAXWORDLENGTH];
@@ -477,19 +330,17 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 					i++;
 				}
 				if(strlen(temp)!=1){throwLexicalError("speak should have empty params", lineCount, characterCount);}
-				cleanTextHead++;cleanText[cleanTextHead]='(';
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;cleanTextHead++;cleanText[cleanTextHead]=')';}
-
-				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
+				if(inputText.array[i]==')'){i++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
+				state=SEMICOLON;
 				break;	
 
 			//following kill
-			case 4:
+			case KILL:
 				//making sure it starts witih (
-				if(inputText.array[i]=='('){i++;cleanTextHead++;cleanText[cleanTextHead]='(';}
-				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
+				if(inputText.array[i]=='('){i++;outputText->head++;outputText->array[outputText->head]='(';}
+				else{throwLexicalError("invalid token: kill must have brackets", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
 				char temp[MAXWORDLENGTH];
@@ -503,18 +354,16 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 					i++;
 				}
 				if(strlen(temp)!=1){throwLexicalError("kill should have empty params", lineCount, characterCount);}
-				cleanTextHead++;cleanText[cleanTextHead]='(';
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;cleanTextHead++;cleanText[cleanTextHead]=')';}
-
-				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
+				if(inputText.array[i]==')'){i++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
+				state=SEMICOLON;
 				break;
 
 			//following hold
-			case 5:
+			case HOLD:
 				//making sure it starts witih (
-				if(inputText.array[i]=='('){i++;cleanTextHead++;cleanText[cleanTextHead]='(';}
+				if(inputText.array[i]=='('){i++;outputText->head++;outputText->array[outputText->head]='(';}
 				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
@@ -531,34 +380,32 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 					j++;
 					i++;
 				}
-				char token[100];
-				sprintf(token,"%d",lexicalTokenAnalyser(temp));
-				for (size_t k = 0; k < strlen(token); k++)
-				{
-					cleanTextHead++;
-					cleanText[cleanTextHead]=token[k];
-				}	 
+				int token=lexicalTokenAnalyser(temp);
+				
+				outputText->head++;
+				outputText->array[outputText->head]=token;
+			
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;cleanTextHead++;cleanText[cleanTextHead]=')';}
+				if(inputText.array[i]==')'){i++;outputText->head++;outputText->array[outputText->head]=')';}
 
 				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;
 
 			//following show
-			case 6://expect ();
+			case SHOW://expect ();
 			break;
 
 			//following take
-			case 7://expect ();
+			case TAKE://expect ();
 			break;
 
 			//following instruct
-			case 8://expect ();
+			case INSTRUCT://expect ();
 			break;
 
 			//following do
-			case 9://expect ();
+			case DO://expect ();
 			break;
 
 			case 32://expect ();
@@ -592,21 +439,21 @@ int paramsAnalyser(char params[], int single){
 }
 
 
-//This one would have taken a token and replaced it with it's numeric value
-//but I didn't have a great splitting method, so I used character by character analysis instead
+//This one takes a token and replaced it with it's numeric value
 int lexicalTokenAnalyser(char currentWord[]){
 
 	//switch for efficiency, pretty sure I save more time with it, even with the extra if statment behind it
 	switch(currentWord[0]){
-		case 'C': if(strcmp(currentWord, "Crazy?")==0){return 1;}break;
-		case 'R': if(strcmp(currentWord, "RubberRoom")==0){return 2;}break;
-		case 's': if(strcmp(currentWord, "speak")==0){return 3;}
-				else if(strcmp(currentWord, "show")==0){return 6;}break;
-		case 'k': if(strcmp(currentWord, "kill")==0){return 4;}break;
-		case 'h': if(strcmp(currentWord, "hold")==0){return 5;}break;
-		case 't': if(strcmp(currentWord, "take")==0){return 7;}break;
-		case 'i': if(strcmp(currentWord, "instruct")==0){return 8;}break;
-		case 'd': if(strcmp(currentWord, "do")==0){return 9;}break;
+		case 'C': if(strcmp(currentWord, "Crazy?")==0){return CRAZY;}break;
+		case 'R': if(strcmp(currentWord, "RubberRoom")==0){return RUBBERROOM;}break;
+		case 's': if(strcmp(currentWord, "speak")==0){return SPEAK;}
+				else if(strcmp(currentWord, "show")==0){return SHOW;}break;
+		case 'k': if(strcmp(currentWord, "kill")==0){return KILL;}break;
+		case 'h': if(strcmp(currentWord, "hold")==0){return HOLD;}break;
+		case 't': if(strcmp(currentWord, "take")==0){return TAKE;}break;
+		case 'i': if(strcmp(currentWord, "instruct")==0){return INSTRUCT;}break;
+		case 'd': if(strcmp(currentWord, "do")==0){return DO;}break;
+		//TODO should hash the strings too, also needs some checks for valid strings
 		case '\"': if(currentWord[strlen(currentWord)-1]=='\"'){ccPush(&sLiterals, currentWord); return sLiterals.head*identifierNum+sIdentifier+variablesFoot;} 
 			else{throwSyntaxError("string not terminated by \"", currentWord); return 0;}		
 		case '\'': if(currentWord[strlen(currentWord)-1]=='\''){ccPush(&sLiterals, currentWord); return cLiterals.head*identifierNum+cIdentifier+variablesFoot;} 
@@ -619,13 +466,14 @@ int lexicalTokenAnalyser(char currentWord[]){
 		{
 			if(!isDigit(currentWord[i])){
 				if(currentWord[i]=='.'&&!foundDot){foundDot=1;}
-				else if(currentWord[i]=='.'&&foundDot){throwSyntaxError("multiple . in number ");return 0;}
+				else if(currentWord[i]=='.'&&foundDot){throwSyntaxError("multiple . in number ", currentWord);return 0;}
 				else {throwSyntaxError("invalid character in number", currentWord); return 0;}
 			}
 		}
 		if (!foundDot){return iLiterals.head*identifierNum+iIdentifier+variablesFoot;}
 		else {return fLiterals.head*identifierNum+fIdentifier+variablesFoot;}
 	} 
+	//TODO Implement hashing
 	else if(isAlpha(currentWord[0])){
 	    rPush(&activeRats, currentWord);
 		return activeRats.head*identifierNum+variablesFoot+rIdentifier;
@@ -724,9 +572,14 @@ int main(int argc, char *argv[]){
     	printToOutputBuffer(text.array[i]);
 	}
 
+	//10 since everything is going to be hashed into ints, none of which will be longer than 10 digits
+	int array[text.head];
+
+	//this will be the next check
+	struct iStack cleanText={.head=-1, .array=array};
 	for (size_t i = 0; i < text.head+1; i++)
 	{
-		lexicalAnalyser(text.array[i]);
+		lexicalAnalyser(text, &cleanText) ;
 	}
 	
 	
