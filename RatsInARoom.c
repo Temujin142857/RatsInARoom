@@ -198,6 +198,90 @@ int printToOutputBuffer(char string[]){
 	return 1;
 }
 
+
+int throwSyntaxError(char message[], char token[]){
+
+}
+
+int paramsAnalyser(char params[], int single){
+	if(single){
+		int length=strlen(params);
+		if(params[0]== '\"'){
+			if(params[length-1]=='\"'){int location=ccPush(&sLiterals, params); return location*identifierNum+sIdentifier+variablesFoot;} 
+			else{throwSyntaxError("string not terminated by \"", params); return 0;}
+		}	
+		else if(params[0]=='\''){if(params[length-1]=='\''&&length==3){int location =cPush(&cLiterals, params); return location*identifierNum+cIdentifier+variablesFoot;} 
+			else{throwSyntaxError("invalid character literal", params); return 0;}	
+		}
+		else if(isDigit(params[0])){
+			int foundDot=0;
+			for (size_t i = 0; i < strlen(params); i++)
+			{
+				if(!isDigit(params[i])){
+					if(params[i]=='.'&&!foundDot){foundDot=1;}
+					else if(params[i]=='.'&&foundDot){throwSyntaxError("multiple . in number ", params);return 0;}
+					else {throwSyntaxError("invalid character in number", params); return 0;}
+				}
+			}
+			if (!foundDot){int location =iPush(&iLiterals, params); return location*identifierNum+iIdentifier+variablesFoot;}
+			else {int location =fPush(&fLiterals, params); return location*identifierNum+fIdentifier+variablesFoot;}
+		} 
+		//TODO Implement hashing
+		else if(isAlpha(params[0])){
+	    	int location =rPush(&activeRats, params);
+			return location*identifierNum+variablesFoot+rIdentifier;
+		}
+	}	
+	else if(!single){
+
+	}
+}
+
+
+//This one takes a token and replaced it with it's numeric value
+int lexicalTokenAnalyser(char currentWord[]){
+
+	//switch for efficiency, pretty sure I save more time with it, even with the extra if statment behind it
+	switch(currentWord[0]){
+		case 'C': if(strcmp(currentWord, "Crazy?")==0){return CRAZY;}break;
+		case 'R': if(strcmp(currentWord, "RubberRoom")==0){return RUBBERROOM;}break;
+		case 's': if(strcmp(currentWord, "speak")==0){return SPEAK;}
+				else if(strcmp(currentWord, "show")==0){return SHOW;}break;
+		case 'k': if(strcmp(currentWord, "kill")==0){return KILL;}break;
+		case 'h': if(strcmp(currentWord, "hold")==0){return HOLD;}break;
+		case 't': if(strcmp(currentWord, "take")==0){return TAKE;}break;
+		case 'i': if(strcmp(currentWord, "instruct")==0){return INSTRUCT;}break;
+		case 'd': if(strcmp(currentWord, "do")==0){return DO;}break;
+		//TODO should hash the strings too, also needs some checks for valid strings
+		case '\"': if(currentWord[strlen(currentWord)-1]=='\"'){int location =ccPush(&sLiterals, currentWord); return location*identifierNum+sIdentifier+variablesFoot;} 
+			else{throwSyntaxError("string not terminated by \"", currentWord); return 0;}		
+		case '\'': if(currentWord[strlen(currentWord)-1]=='\''&&strlen(currentWord)==3){int location =cPush(&cLiterals, currentWord); return location*identifierNum+cIdentifier+variablesFoot;} 
+			else{throwSyntaxError("invalid character literal at", currentWord); return 0;}	
+
+	}
+	if(isDigit(currentWord[0])){
+		int foundDot=0;
+		for (size_t i = 0; i < strlen(currentWord); i++)
+		{
+			if(!isDigit(currentWord[i])){
+				if(currentWord[i]=='.'&&!foundDot){foundDot=1;}
+				else if(currentWord[i]=='.'&&foundDot){throwSyntaxError("multiple . in number ", currentWord);return 0;}
+				else {throwSyntaxError("invalid character in number", currentWord); return 0;}
+			}
+		}
+		if (!foundDot){int location =iPush(&iLiterals, currentWord); return location*identifierNum+iIdentifier+variablesFoot;}
+		else {int location =fPush(&fLiterals, currentWord); return location*identifierNum+fIdentifier+variablesFoot;}
+	} 
+	//TODO Implement hashing
+	else if(isAlpha(currentWord[0])){
+	    rPush(&activeRats, currentWord);
+		return activeRats.head*identifierNum+variablesFoot+rIdentifier;
+	}
+	throwSyntaxError("unrecognizable token", currentWord);
+	return 0;
+}
+
+
 //good start, not complete
 int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 	int state=0;
@@ -344,7 +428,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 			//following kill
 			case KILL:
 				//making sure it starts witih (
-				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]='(';}
+				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
 				else{throwLexicalError("invalid token: kill must have brackets", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
@@ -369,7 +453,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 			//following hold
 			case HOLD:
 				//making sure it starts witih (
-				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]='(';}
+				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
 				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
@@ -386,14 +470,12 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					j++;
 					i++;characterCount++;
 				}
-				int token=lexicalTokenAnalyser(temp);
-				
+				int token=paramsAnalyser(temp, 1);				
 				outputText->head++;
-				outputText->array[outputText->head]=token;
-			
+				outputText->array[outputText->head]=token;			
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=')';}
+				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 
 				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;
@@ -437,61 +519,10 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 	
 }
 
-int paramsAnalyser(char params[], int single){
-	if(single){
-		int length=strlen(params);
-	}
-	else{}
-}
 
 
-//This one takes a token and replaced it with it's numeric value
-int lexicalTokenAnalyser(char currentWord[]){
-
-	//switch for efficiency, pretty sure I save more time with it, even with the extra if statment behind it
-	switch(currentWord[0]){
-		case 'C': if(strcmp(currentWord, "Crazy?")==0){return CRAZY;}break;
-		case 'R': if(strcmp(currentWord, "RubberRoom")==0){return RUBBERROOM;}break;
-		case 's': if(strcmp(currentWord, "speak")==0){return SPEAK;}
-				else if(strcmp(currentWord, "show")==0){return SHOW;}break;
-		case 'k': if(strcmp(currentWord, "kill")==0){return KILL;}break;
-		case 'h': if(strcmp(currentWord, "hold")==0){return HOLD;}break;
-		case 't': if(strcmp(currentWord, "take")==0){return TAKE;}break;
-		case 'i': if(strcmp(currentWord, "instruct")==0){return INSTRUCT;}break;
-		case 'd': if(strcmp(currentWord, "do")==0){return DO;}break;
-		//TODO should hash the strings too, also needs some checks for valid strings
-		case '\"': if(currentWord[strlen(currentWord)-1]=='\"'){ccPush(&sLiterals, currentWord); return sLiterals.head*identifierNum+sIdentifier+variablesFoot;} 
-			else{throwSyntaxError("string not terminated by \"", currentWord); return 0;}		
-		case '\'': if(currentWord[strlen(currentWord)-1]=='\''){ccPush(&sLiterals, currentWord); return cLiterals.head*identifierNum+cIdentifier+variablesFoot;} 
-			else{throwSyntaxError("character not terminated by \'", currentWord); return 0;}	
-
-	}
-	if(isDigit(currentWord[0])){
-		int foundDot=0;
-		for (size_t i = 0; i < strlen(currentWord); i++)
-		{
-			if(!isDigit(currentWord[i])){
-				if(currentWord[i]=='.'&&!foundDot){foundDot=1;}
-				else if(currentWord[i]=='.'&&foundDot){throwSyntaxError("multiple . in number ", currentWord);return 0;}
-				else {throwSyntaxError("invalid character in number", currentWord); return 0;}
-			}
-		}
-		if (!foundDot){return iLiterals.head*identifierNum+iIdentifier+variablesFoot;}
-		else {return fLiterals.head*identifierNum+fIdentifier+variablesFoot;}
-	} 
-	//TODO Implement hashing
-	else if(isAlpha(currentWord[0])){
-	    rPush(&activeRats, currentWord);
-		return activeRats.head*identifierNum+variablesFoot+rIdentifier;
-	}
-	throwSyntaxError("unrecognizable token", currentWord);
-	return 0;
-}
 
 
-int throwSyntaxError(char message[], char token[]){
-
-}
 /*
 char *translateWord(char currentWord[]){//takes a word, returns a pointer to the char[] which should be printed into the compiled file
 	if(erno){return;}
