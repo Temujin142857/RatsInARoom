@@ -4,6 +4,7 @@ oriented language, but pay them no mind, they're in the pocket of Big Cheese)*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 
 
@@ -118,6 +119,8 @@ int currentState=0;
 
 //util functions
 
+
+
 //stack behavior, takes array and headPointer
 int iHasNext(struct iStack *stack){
 	return stack->head!=-1&&stack->array[stack->head]!=0;
@@ -131,13 +134,17 @@ int textHasNext(struct textStack *stack){
 	return stack->head!=-1&&stack->array[stack->head]!=0;
 }
 
-int ccPush(struct ccStack *stack, char newElement[MAXWORDLENGTH]){
+int ccPush(struct ccStack *stack, char newElement[]){
 	stack->head++;
 	strcpy(stack->array[stack->head],newElement);
 	return 1;	
 }
 
-int textPush(struct textStack *stack, char newElement[MAXWORDLENGTH]){
+unsigned int rPush(struct rStack *stack, char newElement[]){
+	unsigned long hasValue=hash(newElement);
+}
+
+int textPush(struct textStack *stack, char newElement[]){
 	stack->head++;
 	strcpy(stack->array[stack->head],newElement);
 	return 1;	
@@ -207,6 +214,8 @@ void textFree(struct textStack *text)
 int sIncludes(){
 
 }
+
+// end of util functions
 
 
 //rat specific functions
@@ -332,27 +341,25 @@ int printToOutputBuffer(char string[]){
 
 int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 	int state=0;
-	char currentToken[MAXWORDLENGTH];
 	char endingToken;
 	int lineCount=0;
 	int characterCount=0;
 	char cleanText[inputText.head];
 	int cleanTextHead=-1;
-	int depth=0;
 	int expectingDot=0;
 
 	for (size_t i = 0; i < inputText.head+1; i++)
 	{		
 		if(inputText.array[i]=='.'){
 			if(expectingDot){cleanTextHead++;cleanText[cleanTextHead]='.';expectingDot=0;}
-			else{throwSyntaxError("invalid token", lineCount, characterCount);}		
+			else{throwLexicalError("invalid token", lineCount, characterCount);}		
 			continue;
 		}
 		switch (state){
 			//newline expected
 			case -1: 
 				if(inputText.array[i]==';'){cleanText[cleanTextHead+1]=';'; state=0; lineCount++; characterCount=0;}
-				else {throwSyntaxError("invalid token", lineCount, characterCount);}
+				else {throwLexicalError("invalid token", lineCount, characterCount);}
 				break;	
 
 			//following newline	
@@ -366,7 +373,7 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 					}
 					int token= lexicalTokenAnalyser(temp);
 					if(token==1) {cleanTextHead++;cleanText[cleanTextHead]=(char)token;state=-1;}							
-					else {throwSyntaxError("invalid token", lineCount, characterCount);}
+					else {throwLexicalError("invalid token", lineCount, characterCount);}
 					break;	
 				}
 				else if(inputText.array[i]=='R'){
@@ -378,10 +385,10 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 					}
 					int token= lexicalTokenAnalyser(temp);
 					if(token==2) {cleanTextHead++;cleanText[cleanTextHead]=(char)token;state=2;expectingDot=1;}							
-					else {throwSyntaxError("invalid token", lineCount, characterCount);}
+					else {throwLexicalError("invalid token", lineCount, characterCount);}
 					break;	
 				}
-				else{throwSyntaxError("didn't start line with crazy or rubber room", lineCount);}
+				else{throwLexicalError("didn't start line with crazy or rubber room", lineCount);}
 				break; 
 
 			//following RubberRoom
@@ -402,14 +409,14 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 					cleanTextHead++;
 					cleanText[cleanTextHead]=token[k];
 				}			
-				if(state==0){throwSyntaxError("invalid token", lineCount, characterCount);}
+				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;	
 
 			//following Spawn
 			case 98:
 				//making sure it starts witih (
 				if(inputText.array[i]=='('){i++;cleanTextHead++;cleanText[cleanTextHead]='(';}
-				else{throwSyntaxError("invalid token: spawn must have parameters", lineCount, characterCount);}
+				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
 				
 				//extracting ratname (string literal) and replacing it with numerical value
 				char temp[MAXWORDLENGTH];
@@ -417,7 +424,7 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 				int openBracketLocation=characterCount-1;
 				while (inputText.array[i]!=')')
 				{
-					if(i>inputText.head){throwSyntaxError("missing closing bracket",lineCount, characterCount);}
+					if(i>inputText.head){throwLexicalError("missing closing bracket",lineCount, characterCount);}
 					temp[j]=inputText.array[i];
 					j++;
 					i++;
@@ -433,7 +440,7 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 				//making sure there are closing )
 				if(inputText.array[i]==')'){i++;cleanTextHead++;cleanText[cleanTextHead]=')';}
 
-				if(state==0){throwSyntaxError("invalid token", lineCount, characterCount);}
+				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;	
 
 			//following a rat	
@@ -449,20 +456,94 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 				int token= lexicalTokenAnalyser(temp);
 				state=token;	
 				cleanText[cleanTextHead+1]=(char) token;		 	
-				if(state==0){throwSyntaxError("invalid token", lineCount, characterCount);}
+				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;	
 
 			//following speak	
-			case 3://expect ();
-			break;
+			case 3:
+				//making sure it starts witih (
+				if(inputText.array[i]=='('){i++;cleanTextHead++;cleanText[cleanTextHead]='(';}
+				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
+				
+				//extracting ratname (string literal) and replacing it with numerical value
+				char temp[MAXWORDLENGTH];
+				int j=0;
+				int openBracketLocation=characterCount-1;
+				while (inputText.array[i]!=')')
+				{
+					if(i>inputText.head){throwLexicalError("missing closing bracket",lineCount, characterCount);}
+					temp[j]=inputText.array[i];
+					j++;
+					i++;
+				}
+				if(strlen(temp)!=1){throwLexicalError("speak should have empty params", lineCount, characterCount);}
+				cleanTextHead++;cleanText[cleanTextHead]='(';
+				
+				//making sure there are closing )
+				if(inputText.array[i]==')'){i++;cleanTextHead++;cleanText[cleanTextHead]=')';}
+
+				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
+				break;	
 
 			//following kill
-			case 4://expect ();
-			break;
+			case 4:
+				//making sure it starts witih (
+				if(inputText.array[i]=='('){i++;cleanTextHead++;cleanText[cleanTextHead]='(';}
+				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
+				
+				//extracting ratname (string literal) and replacing it with numerical value
+				char temp[MAXWORDLENGTH];
+				int j=0;
+				int openBracketLocation=characterCount-1;
+				while (inputText.array[i]!=')')
+				{
+					if(i>inputText.head){throwLexicalError("missing closing bracket",lineCount, characterCount);}
+					temp[j]=inputText.array[i];
+					j++;
+					i++;
+				}
+				if(strlen(temp)!=1){throwLexicalError("kill should have empty params", lineCount, characterCount);}
+				cleanTextHead++;cleanText[cleanTextHead]='(';
+				
+				//making sure there are closing )
+				if(inputText.array[i]==')'){i++;cleanTextHead++;cleanText[cleanTextHead]=')';}
+
+				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
+				break;
 
 			//following hold
-			case 5://expect ();
-			break;
+			case 5:
+				//making sure it starts witih (
+				if(inputText.array[i]=='('){i++;cleanTextHead++;cleanText[cleanTextHead]='(';}
+				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
+				
+				//extracting ratname (string literal) and replacing it with numerical value
+				char temp[MAXWORDLENGTH];
+				int j=0;
+				int openBracketLocation=characterCount-1;
+				int depth=1;
+				while (depth!=0)
+				{
+					if(i>inputText.head){throwLexicalError("missing closing bracket",lineCount, characterCount);}
+					if(inputText.array[i]=='('){depth++;}
+					else if(inputText.array[i]==')'){depth--;}
+					temp[j]=inputText.array[i];
+					j++;
+					i++;
+				}
+				char token[100];
+				sprintf(token,"%d",lexicalTokenAnalyser(temp));
+				for (size_t k = 0; k < strlen(token); k++)
+				{
+					cleanTextHead++;
+					cleanText[cleanTextHead]=token[k];
+				}	 
+				
+				//making sure there are closing )
+				if(inputText.array[i]==')'){i++;cleanTextHead++;cleanText[cleanTextHead]=')';}
+
+				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
+				break;
 
 			//following show
 			case 6://expect ();
@@ -503,11 +584,19 @@ int lexicalAnalyser(struct textStack inputText, struct textStack *outputText){
 	
 }
 
+int paramsAnalyser(char params[], int single){
+	if(single){
+		int length=strlen(params);
+	}
+	else{}
+}
+
 
 //This one would have taken a token and replaced it with it's numeric value
 //but I didn't have a great splitting method, so I used character by character analysis instead
 int lexicalTokenAnalyser(char currentWord[]){
 
+	//switch for efficiency, pretty sure I save more time with it, even with the extra if statment behind it
 	switch(currentWord[0]){
 		case 'C': if(strcmp(currentWord, "Crazy?")==0){return 1;}break;
 		case 'R': if(strcmp(currentWord, "RubberRoom")==0){return 2;}break;
