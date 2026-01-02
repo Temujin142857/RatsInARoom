@@ -21,6 +21,7 @@ struct rat {
 struct ratStack {
 	int head;
 	struct rat *array;	
+	int capacity;
 };
 
 
@@ -32,26 +33,31 @@ struct ccStack {
 struct cStack{
 	int head;
 	char *array;
+	int capacity;
 };
 
 struct fStack{
 	int head;
 	float *array;
+	int capacity;
 };
 
 struct textStack {
 	int head;
 	char **array;
+	int capacity;
 };
 
 struct iStack {
 	int head;
 	int *array;
+	int capacity;
 };
 
 struct outputBufferStack{
 	int head;
 	char array[1024];
+	int capacity;
 };
 
 
@@ -69,6 +75,14 @@ int textHasNext(struct textStack *stack){
 }
 
 int cPush (struct cStack *stack, char newElement){
+	
+	if(stack->head+1>=stack->capacity){
+		size_t newCapacity=stack->capacity*2;
+		char* temp=realloc(stack->array, newCapacity * sizeof *stack->array);
+		if(temp==NULL){return 0;}
+		stack->array=temp;
+		stack->capacity=newCapacity;
+	}
 	stack->head++;
 	stack->array[stack->head]=newElement;
 	return 1;

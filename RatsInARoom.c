@@ -205,11 +205,11 @@ int printToOutputBuffer(char string[]){
 
 
 int throwSyntaxError(char message[], char token[]){
-	printf("%s,: %s\n", message, token);
+	printf("%s: %s\n", message, token);
 }
 
 int throwLexicalError(char message[], int line, int character){
-	printf("%s at: %d, %d\n", message, line, character);
+	printf("%s at line %d, character %d\n", message, line, character);
 }
 
 
@@ -396,7 +396,6 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 						if(j<wordlength-1){i++;characterCount++;}
 					}
 					temp[10] = '\0';
-					printf("rubberRoom?: %s\n", temp);
 					int token= lexicalTokenAnalyser(temp);
 					if(token==RUBBERROOM) {
 						outputText->head++;outputText->array[outputText->head]=token;
@@ -466,13 +465,15 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 			case 99:{
 				char temp[MAXWORDLENGTH];
 				int j=0;
-				while (inputText.array[i]!='(')
+				while (inputText.array[i]!=')')
 				{
 					temp[j]=inputText.array[i];
 					j++;
 					i++;
 					characterCount++;
 				}
+				temp[j]='\0';
+				printf("temp: %s", temp);
 				int token= lexicalTokenAnalyser(temp);
 				state=token;	
 				outputText->array[outputText->head]=token;		 	
