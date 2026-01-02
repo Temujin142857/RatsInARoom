@@ -205,11 +205,11 @@ int printToOutputBuffer(char string[]){
 
 
 int throwSyntaxError(char message[], char token[]){
-	printf("%s,: %s", message, token);
+	printf("%s,: %s\n", message, token);
 }
 
 int throwLexicalError(char message[], int line, int character){
-	printf("%s at: %d, %d", message, line, character);
+	printf("%s at: %d, %d\n", message, line, character);
 }
 
 
@@ -221,7 +221,8 @@ int lexicalTokenAnalyser(char currentWord[]){
 		case 'C': if(strcmp(currentWord, "Crazy?")==0){return CRAZY;}break;
 		case 'R': if(strcmp(currentWord, "RubberRoom")==0){return RUBBERROOM;}break;
 		case 's': if(strcmp(currentWord, "speak")==0){return SPEAK;}
-				else if(strcmp(currentWord, "show")==0){return SHOW;}break;
+				else if(strcmp(currentWord, "show")==0){return SHOW;}
+				else if(strcmp(currentWord, "spawn")==0){return SPAWN;}break;
 		case 'k': if(strcmp(currentWord, "kill")==0){return KILL;}break;
 		case 'h': if(strcmp(currentWord, "hold")==0){return HOLD;}break;
 		case 't': if(strcmp(currentWord, "take")==0){return TAKE;}break;
@@ -357,7 +358,7 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 
 	for (size_t i = 0; i < inputText.head+1; i++)
 	{		
-		characterCount++;
+		printf("i, c: %ld, %c\n", i, inputText.array[i]);		
 		if(inputText.array[i]=='.'){
 			if(expectingDot){outputText->head++;outputText->array[outputText->head]=DOT;expectingDot=0;}
 			else{throwLexicalError("invalid spot for a .", lineCount, characterCount);}		
@@ -373,7 +374,7 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 			}
 
 			//following newline	
-			case 0: {
+			case 0: {				
 				if(inputText.array[i]=='C'){
 					const int wordlength=6; 
 					char temp[wordlength];
@@ -381,24 +382,32 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 					{
 						temp[j]=inputText.array[i];
 						if(j<wordlength-1){i++; characterCount++;}
-					}
+					}					
 					int token= lexicalTokenAnalyser(temp);
 					if(token==CRAZY) {outputText->head++;outputText->array[outputText->head]=token;state=SEMICOLON;}							
 					else {throwLexicalError("invalid token", lineCount, characterCount);}
 					break;	
 				}
 				else if(inputText.array[i]=='R'){
-					const int wordlength=10; char temp[wordlength];
-					for (size_t j = 0; j < wordlength; j++)
+					const int wordlength=11; char temp[wordlength];
+					for (size_t j = 0; j < wordlength-1; j++)
 					{
 						temp[j]=inputText.array[i];
 						if(j<wordlength-1){i++;characterCount++;}
 					}
+					temp[10] = '\0';
+					printf("rubberRoom?: %s\n", temp);
 					int token= lexicalTokenAnalyser(temp);
-					if(token==RUBBERROOM) {outputText->head++;outputText->array[outputText->head]=token;state=RUBBERROOM;expectingDot=1;}							
+					if(token==RUBBERROOM) {
+						outputText->head++;outputText->array[outputText->head]=token;
+						state=RUBBERROOM;
+						expectingDot=1;						
+
+					}							
 					else {throwLexicalError("invalid token", lineCount, characterCount);}
 					break;	
 				}
+
 				else{throwLexicalError("didn't start line with crazy or rubber room", lineCount, characterCount);}
 				break; 
 			}
@@ -591,6 +600,7 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 			case 65://expect ();
 			break;
 		}
+		characterCount++;
 		
 	}
 	return 1;
