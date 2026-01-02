@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "ratsInARoomDebugger",
+            "type": "cppdbg",
+            "request": "launch",
+            "args": ["arg1", "arg2"],     
+            "program": "/home/tom/Programming/RatsInARoom/RatsInARoom.c",
+        }
+
+    ]
+}

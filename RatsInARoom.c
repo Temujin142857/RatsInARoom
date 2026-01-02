@@ -5,15 +5,16 @@ oriented language, but pay them no mind, they're in the pocket of Big Cheese)*/
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <utils.h>
+#include <ctype.h>
+#include "utils.h"
 
 
 
 //max length of a shortword will be 25 characters
 
-const int MAXWORDLENGTH=32;
-const int MAXBUFFERLENGTH=1024;
-const int AMOUNTOFSYMBOLS=14;
+#define MAXWORDLENGTH 32
+#define MAXBUFFERLENGTH 1024
+#define AMOUNTOFSYMBOLS 14
 
 const int iIdentifier=0;
 const int cIdentifier=1;
@@ -23,21 +24,21 @@ const int rIdentifier=4;
 const int identifierNum=5;
 
 
-const char symbols[AMOUNTOFSYMBOLS][10]={";", "Crazy?","RubberRoom", "speak", "kill", "hold", "show", "take", "instruct", "do", "spawn", ".", "(", ")" };
-const int SEMICOLON=-1;
-const int CRAZY=1;
-const int RUBBERROOM=2;
-const int SPEAK=3;
-const int KILL=4;
-const int HOLD=5;
-const int SHOW=6;
-const int TAKE=7;
-const int INSTRUCT=8;
-const int DO=9;
-const int SPAWN=10;
-const int DOT=11;
-const int OPENBRACKET=12;
-const int CLOSEBRACKET=13;
+const char symbols[AMOUNTOFSYMBOLS][10]={";", "Crazy\?","RubberRoom", "speak", "kill", "hold", "show", "take", "instruct", "do", "spawn", ".", "(", ")" };
+#define SEMICOLON -1
+#define CRAZY 1
+#define RUBBERROOM 2
+#define SPEAK 3
+#define KILL 4
+#define HOLD 5
+#define SHOW 6
+#define TAKE 7
+#define INSTRUCT 8
+#define DO 9
+#define SPAWN 10
+#define DOT 11
+#define OPENBRACKET 12
+#define CLOSEBRACKET 13
 
 const int symbolsFoot=1;
 const int variablesFoot=symbolsFoot+AMOUNTOFSYMBOLS;
@@ -85,7 +86,7 @@ int validateArgs(){
 }
 
 //working and done
-struct textStack readFile(char filePath[]){
+struct cStack readFile(char filePath[]){
 	printf("attempting to open file: %s\n", filePath);
 	FILE *file = fopen(filePath, "r");
 	printf("successfully opened file\n");
@@ -124,7 +125,7 @@ struct textStack readFile(char filePath[]){
 					free(tempText); // Clean up any previously allocated memory
 					fclose(file);
 					erno=1;
-					struct textStack failure= {-1};
+					struct cStack failure= {-1};
 					return failure;
 				}
         	}			
@@ -135,6 +136,7 @@ struct textStack readFile(char filePath[]){
 	wordCount++;
 	fclose(file);
 
+	/*
 	char **array = (char **)malloc((wordCount) * sizeof(char *));
 
 	int characterCount=0;
@@ -153,6 +155,9 @@ struct textStack readFile(char filePath[]){
 	//put tempText into the text stack
     struct textStack text = {wordCount-1, array};	
 	array=NULL;
+	*/
+	struct cStack text={globalCharacterCount-1, tempText}; 
+	tempText=NULL;
 	
 	return text;
 }
@@ -200,34 +205,82 @@ int printToOutputBuffer(char string[]){
 
 
 int throwSyntaxError(char message[], char token[]){
-
+	printf("%s,: %s", message, token);
 }
 
-int paramsAnalyser(char params[], int *output[], int single){
+int throwLexicalError(char message[], int line, int character){
+	printf("%s at: %d, %d", message, line, character);
+}
+
+
+//This one takes a token and replaced it with it's numeric value
+int lexicalTokenAnalyser(char currentWord[]){
+
+	//switch for efficiency, pretty sure I save more time with it, even with the extra if statment behind it
+	switch(currentWord[0]){
+		case 'C': if(strcmp(currentWord, "Crazy?")==0){return CRAZY;}break;
+		case 'R': if(strcmp(currentWord, "RubberRoom")==0){return RUBBERROOM;}break;
+		case 's': if(strcmp(currentWord, "speak")==0){return SPEAK;}
+				else if(strcmp(currentWord, "show")==0){return SHOW;}break;
+		case 'k': if(strcmp(currentWord, "kill")==0){return KILL;}break;
+		case 'h': if(strcmp(currentWord, "hold")==0){return HOLD;}break;
+		case 't': if(strcmp(currentWord, "take")==0){return TAKE;}break;
+		case 'i': if(strcmp(currentWord, "instruct")==0){return INSTRUCT;}break;
+		case 'd': if(strcmp(currentWord, "do")==0){return DO;}break;
+		//TODO should hash the strings too, also needs some checks for valid strings
+		case '\"': if(currentWord[strlen(currentWord)-1]=='\"'){int location =ccPush(&sLiterals, currentWord); return location*identifierNum+sIdentifier+variablesFoot;} 
+			else{throwSyntaxError("string not terminated by \"", currentWord); return 0;}		
+		case '\'': if(currentWord[strlen(currentWord)-1]=='\''&&strlen(currentWord)==3){int location =cPush(&cLiterals, currentWord[1]); return location*identifierNum+cIdentifier+variablesFoot;} 
+			else{throwSyntaxError("invalid character literal at", currentWord); return 0;}	
+
+	}
+	if(isdigit(currentWord[0])){
+		int foundDot=0;
+		for (size_t i = 0; i < strlen(currentWord); i++)
+		{
+			if(!isdigit(currentWord[i])){
+				if(currentWord[i]=='.'&&!foundDot){foundDot=1;}
+				else if(currentWord[i]=='.'&&foundDot){throwSyntaxError("multiple . in number ", currentWord);return 0;}
+				else {throwSyntaxError("invalid character in number", currentWord); return 0;}
+			}
+		}
+		if (!foundDot){int location =iPush(&iLiterals, atoi(currentWord)); return location*identifierNum+iIdentifier+variablesFoot;}
+		else {int location =fPush(&fLiterals, atof(currentWord)); return location*identifierNum+fIdentifier+variablesFoot;}
+	} 
+	//TODO Implement hashing
+	else if(isalpha(currentWord[0])){
+	    rPush(&activeRats, currentWord);
+		return activeRats.head*identifierNum+variablesFoot+rIdentifier;
+	}
+	throwSyntaxError("unrecognizable token", currentWord);
+	return 0;
+}
+
+int paramsAnalyser(char params[], int *output, int single){
 	if(single){
 		int length=strlen(params);
 		if(params[0]== '\"'){
-			if(params[length-1]=='\"'){int location=ccPush(&sLiterals, params); return location*identifierNum+sIdentifier+variablesFoot;} 
+			if(params[length-1]=='\"'){int location=ccPush(&sLiterals, params); output[0]=location*identifierNum+sIdentifier+variablesFoot;} 
 			else{throwSyntaxError("string not terminated by \"", params); return 0;}
 		}	
-		else if(params[0]=='\''){if(params[length-1]=='\''&&length==3){int location =cPush(&cLiterals, params); return location*identifierNum+cIdentifier+variablesFoot;} 
+		else if(params[0]=='\''){if(params[length-1]=='\''&&length==3){int location =cPush(&cLiterals, params[1]); output[0]= location*identifierNum+cIdentifier+variablesFoot;} 
 			else{throwSyntaxError("invalid character literal", params); return 0;}	
 		}		
-		else if(isDigit(params[0])){
+		else if(isdigit(params[0])){
 			int foundDot=0;
 			for (size_t i = 0; i < strlen(params); i++)
 			{
-				if(!isDigit(params[i])){
+				if(!isdigit(params[i])){
 					if(params[i]=='.'&&!foundDot){foundDot=1;}
 					else if(params[i]=='.'&&foundDot){throwSyntaxError("multiple . in number ", params);return 0;}
 					else {throwSyntaxError("invalid character in number", params); return 0;}
 				}
 			}
-			if (!foundDot){int location =iPush(&iLiterals, params); return location*identifierNum+iIdentifier+variablesFoot;}
-			else {int location =fPush(&fLiterals, params); return location*identifierNum+fIdentifier+variablesFoot;}
+			if (!foundDot){int location =iPush(&iLiterals, atoi(params)); output[0]=location*identifierNum+iIdentifier+variablesFoot;}
+			else {int location =fPush(&fLiterals, atof(params)); output[0]=location*identifierNum+fIdentifier+variablesFoot;}
 		} 
 		//TODO Implement hashing
-		else if(isAlpha(params[0])){
+		else if(isalpha(params[0])){
 			//first make sure it starts with RubberRoom.
 			const int wordlength=10; char temp[wordlength];
 			for (size_t i = 0; i < wordlength; i++)
@@ -250,9 +303,9 @@ int paramsAnalyser(char params[], int *output[], int single){
 				if(i>length-1){throwSyntaxError("invalid params", params);return 0;}
 			}
 			i++;
-			int token= lexicalTokenAnalyser(temp);
-			if(token<variablesFoot||(token-variablesFoot)%identifierNum!=rIdentifier||token>activeRats.head){throwSyntaxError("invalid params", params);return 0;}
-			output[2]=token;
+			int token2= lexicalTokenAnalyser(temp);
+			if(token2<variablesFoot||(token2-variablesFoot)%identifierNum!=rIdentifier||token2>activeRats.head){throwSyntaxError("invalid params", params);return 0;}
+			output[2]=token2;
 
 			//check if it's do, take or show
 			char temp3[10];
@@ -260,16 +313,25 @@ int paramsAnalyser(char params[], int *output[], int single){
 			while(params[i]!='('){
 				if(i>length-1){throwSyntaxError("invalid params", params);return 0;}
 				temp3[j]=params[i];
+				i++;
+				j++;
 			}
 			if (strcmp(temp3,"show")==0){
+				output[3]=SHOW;
 				//check if next two characters are (), push SHOW to ouput, push OPENBRACKET, push CLOSEBRACKET
-				//return 1 for success
+				if(params[i]=='('&&params[i+1]==')'){output[4]=OPENBRACKET;output[5]=CLOSEBRACKET;}
 			} 
 			else if (strcmp(temp3,"take")==0){
+				output[3]=TAKE;
+				//check if next two characters are (), push SHOW to ouput, push OPENBRACKET, push CLOSEBRACKET
+				if(params[i]=='('&&params[i+1]==')'){output[4]=OPENBRACKET;output[5]=CLOSEBRACKET;}
 
 			}
 			else if (strcmp(temp3,"do")==0){
-				//recursive
+				//TODO, implement this recursively
+				//something like:
+				//paramsAnalyser(temp4, output2, 0)
+				//output.concat(output2)
 			}
 			else {throwSyntaxError("invalid params", params);return 0;}
 
@@ -280,55 +342,14 @@ int paramsAnalyser(char params[], int *output[], int single){
 	else if(!single){
 
 	}
+	return 1;
 }
 
 
-//This one takes a token and replaced it with it's numeric value
-int lexicalTokenAnalyser(char currentWord[]){
-
-	//switch for efficiency, pretty sure I save more time with it, even with the extra if statment behind it
-	switch(currentWord[0]){
-		case 'C': if(strcmp(currentWord, "Crazy?")==0){return CRAZY;}break;
-		case 'R': if(strcmp(currentWord, "RubberRoom")==0){return RUBBERROOM;}break;
-		case 's': if(strcmp(currentWord, "speak")==0){return SPEAK;}
-				else if(strcmp(currentWord, "show")==0){return SHOW;}break;
-		case 'k': if(strcmp(currentWord, "kill")==0){return KILL;}break;
-		case 'h': if(strcmp(currentWord, "hold")==0){return HOLD;}break;
-		case 't': if(strcmp(currentWord, "take")==0){return TAKE;}break;
-		case 'i': if(strcmp(currentWord, "instruct")==0){return INSTRUCT;}break;
-		case 'd': if(strcmp(currentWord, "do")==0){return DO;}break;
-		//TODO should hash the strings too, also needs some checks for valid strings
-		case '\"': if(currentWord[strlen(currentWord)-1]=='\"'){int location =ccPush(&sLiterals, currentWord); return location*identifierNum+sIdentifier+variablesFoot;} 
-			else{throwSyntaxError("string not terminated by \"", currentWord); return 0;}		
-		case '\'': if(currentWord[strlen(currentWord)-1]=='\''&&strlen(currentWord)==3){int location =cPush(&cLiterals, currentWord); return location*identifierNum+cIdentifier+variablesFoot;} 
-			else{throwSyntaxError("invalid character literal at", currentWord); return 0;}	
-
-	}
-	if(isDigit(currentWord[0])){
-		int foundDot=0;
-		for (size_t i = 0; i < strlen(currentWord); i++)
-		{
-			if(!isDigit(currentWord[i])){
-				if(currentWord[i]=='.'&&!foundDot){foundDot=1;}
-				else if(currentWord[i]=='.'&&foundDot){throwSyntaxError("multiple . in number ", currentWord);return 0;}
-				else {throwSyntaxError("invalid character in number", currentWord); return 0;}
-			}
-		}
-		if (!foundDot){int location =iPush(&iLiterals, currentWord); return location*identifierNum+iIdentifier+variablesFoot;}
-		else {int location =fPush(&fLiterals, currentWord); return location*identifierNum+fIdentifier+variablesFoot;}
-	} 
-	//TODO Implement hashing
-	else if(isAlpha(currentWord[0])){
-	    rPush(&activeRats, currentWord);
-		return activeRats.head*identifierNum+variablesFoot+rIdentifier;
-	}
-	throwSyntaxError("unrecognizable token", currentWord);
-	return 0;
-}
 
 
 //good start, not complete
-int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
+int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 	int state=0;
 	int lineCount=0;
 	int characterCount=0;
@@ -345,15 +366,17 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 		switch (state){
 
 			//newline expected
-			case SEMICOLON: 
+			case SEMICOLON: {
 				if(inputText.array[i]==';'){outputText->head++;outputText->array[outputText->head]=SEMICOLON; state=0; lineCount++; characterCount=0;}
 				else {throwLexicalError("expecting a semicolon", lineCount, characterCount);}
 				break;	
+			}
 
 			//following newline	
-			case 0:
+			case 0: {
 				if(inputText.array[i]=='C'){
-					const int wordlength=6; char temp[wordlength];
+					const int wordlength=6; 
+					char temp[wordlength];
 					for (size_t j = 0; j < wordlength; j++)
 					{
 						temp[j]=inputText.array[i];
@@ -376,11 +399,12 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					else {throwLexicalError("invalid token", lineCount, characterCount);}
 					break;	
 				}
-				else{throwLexicalError("didn't start line with crazy or rubber room", lineCount);}
+				else{throwLexicalError("didn't start line with crazy or rubber room", lineCount, characterCount);}
 				break; 
+			}
 
 			//following RubberRoom
-			case RUBBERROOM:
+			case RUBBERROOM: {
 				char temp[MAXWORDLENGTH];
 				int j=0;
 				while (inputText.array[i]!='.'&&inputText.array[i]!='(')
@@ -396,11 +420,11 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 				if(token==SPAWN){state=SPAWN;}else {/*maybe check if the rat (the token) exists*/state=99;expectingDot=1;}
 				outputText->head++;
 				outputText->array[outputText->head]=token;
-
 				break;	
+			}
 
 			//following Spawn
-			case SPAWN:
+			case SPAWN:{
 				//making sure it starts witih (
 				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
 				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
@@ -427,9 +451,10 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 				state=SEMICOLON;
 				break;	
+			}
 
 			//following a rat	
-			case 99:
+			case 99:{
 				char temp[MAXWORDLENGTH];
 				int j=0;
 				while (inputText.array[i]!='(')
@@ -444,9 +469,10 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 				outputText->array[outputText->head]=token;		 	
 				if(2<state<10){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;	
+			}
 
 			//following speak	
-			case SPEAK:
+			case SPEAK:{
 				//making sure it starts witih (
 				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
 				else{throwLexicalError("invalid token: speak must have brackets", lineCount, characterCount);}
@@ -469,9 +495,10 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 				state=SEMICOLON;
 				break;	
+			}
 
 			//following kill
-			case KILL:
+			case KILL: {
 				//making sure it starts witih (
 				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
 				else{throwLexicalError("invalid token: kill must have brackets", lineCount, characterCount);}
@@ -494,9 +521,10 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 				state=SEMICOLON;
 				break;
+			}
 
 			//following hold
-			case HOLD:
+			case HOLD:{
 				//making sure it starts witih (
 				if(inputText.array[i]=='('){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=OPENBRACKET;}
 				else{throwLexicalError("invalid token: spawn must have parameters", lineCount, characterCount);}
@@ -515,15 +543,19 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 					j++;
 					i++;characterCount++;
 				}
-				int token=paramsAnalyser(temp, 1);				
+
+				int *token;
+				paramsAnalyser(temp, token, 1);				
 				outputText->head++;
-				outputText->array[outputText->head]=token;			
+				//TODO hande the case where token is an array, not just a lone int
+				outputText->array[outputText->head]=*token;			
 				
 				//making sure there are closing )
 				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 
 				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;
+			}
 
 			//following show
 			case SHOW://expect ();
@@ -561,7 +593,7 @@ int lexicalAnalyser(struct textStack inputText, struct iStack *outputText){
 		}
 		
 	}
-	
+	return 1;
 }
 
 
@@ -622,11 +654,11 @@ int main(int argc, char *argv[]){
    		printf("No input file provided\n");
    		return 1;
 	}
-	struct textStack text=readFile(argv[1]);
-	printf("\namount of lines in text: %d\n", text.head+1);
+	struct cStack text=readFile(argv[1]);
+	printf("\namount of characters in text: %d\n", text.head+1);
 	for (int i = 0; i <= text.head; i++)
 	{
-    	printf("line%d: %s\n", i, text.array[i]);
+    	printf("%c", text.array[i]);
 	}
 	printf("\n");
 	
@@ -648,21 +680,22 @@ int main(int argc, char *argv[]){
     } else {
         printf("Ouput file not already present\n\n");
     }
-
-	for (int i = 0; i <= text.head; i++)
-	{
-    	printToOutputBuffer(text.array[i]);
-	}
+    printToOutputBuffer(text.array);
+	
 
 	//10 since everything is going to be hashed into ints, none of which will be longer than 10 digits
 	int array[text.head];
 
 	//this will be the next check
 	struct iStack cleanText={.head=-1, .array=array};
-	for (size_t i = 0; i < text.head+1; i++)
+	lexicalAnalyser(text, &cleanText);
+	printf("clean text head: %d", cleanText.head);
+	for (size_t i = 0; i < cleanText.head; i++)
 	{
-		lexicalAnalyser(text, &cleanText) ;
+		printf("%d", cleanText.array[i]);
 	}
+	
+	
 	
 	
 	
@@ -682,7 +715,6 @@ int main(int argc, char *argv[]){
 	}
 	*/
 	flushOutputBuffer();
-	textFree(&text);
     return 0;  
 }
 

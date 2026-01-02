@@ -19,8 +19,8 @@ struct rat {
 };
 
 struct ratStack {
-	struct rat *array;
 	int head;
+	struct rat *array;	
 };
 
 
@@ -68,14 +68,32 @@ int textHasNext(struct textStack *stack){
 	return stack->head!=-1&&stack->array[stack->head]!=0;
 }
 
+int cPush (struct cStack *stack, char newElement){
+	stack->head++;
+	stack->array[stack->head]=newElement;
+	return 1;
+}
+
+int iPush (struct iStack *stack, int newElement){
+	stack->head++;
+	stack->array[stack->head]=newElement;
+	return 1;
+}
+
+int fPush (struct fStack *stack, float newElement){
+	stack->head++;
+	stack->array[stack->head]=newElement;
+	return 1;
+}
+
 int ccPush(struct ccStack *stack, char newElement[]){
 	stack->head++;
 	strcpy(stack->array[stack->head],newElement);
 	return 1;	
 }
 
-unsigned int rPush(struct rStack *stack, char newElement[]){
-	unsigned long hasValue=hash(newElement);
+unsigned int rPush(struct ratStack *stack, char newElement[]){
+	//unsigned long hasValue=hash(newElement);
 }
 
 int textPush(struct textStack *stack, char newElement[]){
