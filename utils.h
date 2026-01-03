@@ -1,5 +1,16 @@
 //util functions
 
+static inline uint32_t hash(void *key, int length) {
+  uint8_t *bytes = (uint8_t *)key;
+  uint32_t hash = 2166136261u;
+
+  for (int i = 0; i < length; i++) {
+    hash ^= bytes[i];
+    hash *= 16777619;
+  }
+  return hash;
+}
+
 struct rat {
 	char* name;
 	int valueType;
@@ -71,8 +82,40 @@ int initCCStack(struct ccStack *stack, int c){
 }
 
 
+struct ratMap{
+  char** entries; 
+  int head;                             
+  int capacity;                          
+  size_t key_size;                       
+  size_t value_size;    
+};
+
+void initMap(struct ratMap *map, size_t value_size) {
+  map->head = -1;
+  map->capacity = 0;
+  map->entries = NULL;
+  map->key_size = sizeof(uint32_t);
+  map->value_size = value_size;
+}
 
 
+void freeMap(struct ratMap *map) {
+  free(map->entries);
+  map->head = 0;
+  map->capacity = 0;
+  map->entries = NULL;
+  map->key_size = 0;
+  map->value_size = 0;
+} 
+
+uint32_t ratMapAdd(struct ratMap *map, struct rat newElement){
+	if(map->head+1>map->capacity){
+		if (!resizeMap(map))return 0;
+	}
+
+	uint32_t index=hash(*newElement.name, strlen(newElement.name));
+
+}
 
 //stack behavior, takes array and headPointer
 int iHasNext(struct iStack *stack){
@@ -140,7 +183,7 @@ int ccPush(struct ccStack *stack, char newElement[]){
 	return 1;
 }
 
-unsigned int rPush(struct ratStack *stack, char newElement[]){
+int rPush(struct ratStack *stack, char newElement[]){
 	//unsigned long hasValue=hash(newElement);
 }
 

@@ -480,7 +480,7 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 				state=token;	
 				printf("line 477 token: %d\n", token);
 				outputText->array[outputText->head]=token;		 	
-				if(2<state<10){throwLexicalError("invalid token", lineCount, characterCount);}
+				if(2<state<variablesFoot){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;	
 			}
 
