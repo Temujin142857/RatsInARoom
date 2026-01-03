@@ -28,6 +28,7 @@ struct ratStack {
 struct ccStack {
 	int head;
 	char **array;
+	int capacity;
 };
 
 struct cStack{
@@ -61,6 +62,18 @@ struct outputBufferStack{
 };
 
 
+int initCCStack(struct ccStack *stack, int c){
+	char* arr[stack->capacity];
+    for (char i= 0; i < stack->capacity; i++){
+        arr[i] = (char*)malloc(c * sizeof(char));
+	}
+	stack->array=arr;
+}
+
+
+
+
+
 //stack behavior, takes array and headPointer
 int iHasNext(struct iStack *stack){
 	return stack->head!=-1&&stack->array[stack->head]!=0;
@@ -74,8 +87,7 @@ int textHasNext(struct textStack *stack){
 	return stack->head!=-1&&stack->array[stack->head]!=0;
 }
 
-int cPush (struct cStack *stack, char newElement){
-	
+int cPush (struct cStack *stack, char newElement){	
 	if(stack->head+1>=stack->capacity){
 		size_t newCapacity=stack->capacity*2;
 		char* temp=realloc(stack->array, newCapacity * sizeof *stack->array);
@@ -89,21 +101,43 @@ int cPush (struct cStack *stack, char newElement){
 }
 
 int iPush (struct iStack *stack, int newElement){
+	if(stack->head+1>=stack->capacity){
+		size_t newCapacity=stack->capacity*2;
+		int* temp=realloc(stack->array, newCapacity * sizeof *stack->array);
+		if(temp==NULL){return 0;}
+		stack->array=temp;
+		stack->capacity=newCapacity;
+	}
 	stack->head++;
 	stack->array[stack->head]=newElement;
 	return 1;
 }
 
 int fPush (struct fStack *stack, float newElement){
+	if(stack->head+1>=stack->capacity){
+		size_t newCapacity=stack->capacity*2;
+		float* temp=realloc(stack->array, newCapacity * sizeof *stack->array);
+		if(temp==NULL){return 0;}
+		stack->array=temp;
+		stack->capacity=newCapacity;
+	}
 	stack->head++;
 	stack->array[stack->head]=newElement;
 	return 1;
 }
 
 int ccPush(struct ccStack *stack, char newElement[]){
+	if(stack->head+1>=stack->capacity){
+		size_t newCapacity=stack->capacity*2;
+		char **temp = realloc( stack->array, sizeof *stack->array * newCapacity);
+		if(temp==NULL){return 0;}
+		stack->array=temp;
+		stack->capacity=newCapacity;
+	}
 	stack->head++;
-	strcpy(stack->array[stack->head],newElement);
-	return 1;	
+	stack->array[stack->head]=malloc(sizeof *newElement * strlen(newElement));
+	strcpy(stack->array[stack->head], newElement);
+	return 1;
 }
 
 unsigned int rPush(struct ratStack *stack, char newElement[]){

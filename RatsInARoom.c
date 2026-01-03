@@ -347,8 +347,6 @@ int paramsAnalyser(char params[], int *output, int single){
 }
 
 
-
-
 //good start, not complete
 int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 	int state=0;
@@ -422,8 +420,11 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 					i++;
 					characterCount++;
 				}				
-				
+				i--;
+				temp[j+1]='\0';
+				printf("line 423 temp: %s\n", temp);
 				int token=lexicalTokenAnalyser(temp);
+				printf("line 425 token: %d\n", token);
 				if(token==0){throwLexicalError("Invalid rat", lineCount, characterCount);}
 				if(token==SPAWN){state=SPAWN;}else {/*maybe check if the rat (the token) exists*/state=99;expectingDot=1;}
 				outputText->head++;
@@ -449,14 +450,14 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 					i++;
 					characterCount++;
 				}
-
+				temp[j+1]='\0';
 				int token=lexicalTokenAnalyser(temp);
 				if(token==0){throwLexicalError("invalid spawn parameter",lineCount, characterCount);}
 				outputText->head++;
 				outputText->array[outputText->head]=token;
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
+				if(inputText.array[i]==')'){outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 				state=SEMICOLON;
 				break;	
 			}
@@ -465,17 +466,19 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 			case 99:{
 				char temp[MAXWORDLENGTH];
 				int j=0;
-				while (inputText.array[i]!=')')
+				while (inputText.array[i]!='(')
 				{
 					temp[j]=inputText.array[i];
 					j++;
 					i++;
 					characterCount++;
 				}
+				i--;
 				temp[j]='\0';
-				printf("temp: %s", temp);
+				printf("line 476 temp: %s\n", temp);
 				int token= lexicalTokenAnalyser(temp);
 				state=token;	
+				printf("line 477 token: %d\n", token);
 				outputText->array[outputText->head]=token;		 	
 				if(2<state<10){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;	
@@ -499,10 +502,11 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 					i++;
 					characterCount++;
 				}
+				temp[j+1]='\0';
 				if(strlen(temp)!=1){throwLexicalError("speak should have empty params", lineCount, characterCount);}
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
+				if(inputText.array[i]==')'){outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 				state=SEMICOLON;
 				break;	
 			}
@@ -525,10 +529,11 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 					i++;
 					characterCount++;
 				}
+				temp[j+1]='\0';
 				if(strlen(temp)!=1){throwLexicalError("kill should have empty params", lineCount, characterCount);}
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
+				if(inputText.array[i]==')'){outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 				state=SEMICOLON;
 				break;
 			}
@@ -553,7 +558,7 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 					j++;
 					i++;characterCount++;
 				}
-
+				temp[j+1]='\0';
 				int *token;
 				paramsAnalyser(temp, token, 1);				
 				outputText->head++;
@@ -561,7 +566,7 @@ int lexicalAnalyser(struct cStack inputText, struct iStack *outputText){
 				outputText->array[outputText->head]=*token;			
 				
 				//making sure there are closing )
-				if(inputText.array[i]==')'){i++;characterCount++;outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
+				if(inputText.array[i]==')'){outputText->head++;outputText->array[outputText->head]=CLOSEBRACKET;}
 
 				if(state==0){throwLexicalError("invalid token", lineCount, characterCount);}
 				break;
@@ -700,11 +705,12 @@ int main(int argc, char *argv[]){
 	//this will be the next check
 	struct iStack cleanText={.head=-1, .array=array};
 	lexicalAnalyser(text, &cleanText);
-	printf("clean text head: %d", cleanText.head);
+	printf("clean text head: %d\n", cleanText.head);
 	for (size_t i = 0; i < cleanText.head; i++)
 	{
-		printf("%d", cleanText.array[i]);
+		printf("%d,", cleanText.array[i]);
 	}
+	printf("\n");
 	
 	
 	
