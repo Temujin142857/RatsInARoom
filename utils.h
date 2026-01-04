@@ -1,6 +1,8 @@
 //util functions
 
-static inline uint32_t hash(void *key, int length) {
+#define ratSize 64
+
+uint32_t hash(void *key, int length) {
   uint8_t *bytes = (uint8_t *)key;
   uint32_t hash = 2166136261u;
 
@@ -12,21 +14,20 @@ static inline uint32_t hash(void *key, int length) {
 }
 
 struct rat {
-	char* name;
-	int valueType;
+	char* name; //capacity 32 letters, size 32 bytes
+	uint8_t valueType; //size 1 byte
 	//0 for no valueType
 	//1 for int
 	//2 for string
 
-	int functionType;
-	int *functionParams;
+	uint8_t functionType; //size 1 byte
+	uint8_t *functionParams; //capacity 30 params, size 30 bytes
 	//0 for no params
 	//1 for int
 	//2 for string
 	//3 for char
 	//4 for float
 	//note you cannot put a rat in a rat
-
 };
 
 struct ratStack {
@@ -82,40 +83,79 @@ int initCCStack(struct ccStack *stack, int c){
 }
 
 
-struct ratMap{
-  char** entries; 
-  int head;                             
+struct rMap{
+  struct rat *array; 
+  int count;                             
   int capacity;                          
   size_t key_size;                       
   size_t value_size;    
 };
 
-void initMap(struct ratMap *map, size_t value_size) {
-  map->head = -1;
-  map->capacity = 0;
-  map->entries = NULL;
+void initrMap(struct rMap *map) {
+  map->count = 0;
+  map->capacity = 128;
+  map->array = malloc(128 * ratSize);
   map->key_size = sizeof(uint32_t);
-  map->value_size = value_size;
+  map->value_size = ratSize;
 }
 
 
-void freeMap(struct ratMap *map) {
-  free(map->entries);
-  map->head = 0;
+void freeMap(struct rMap *map) {
+  free(map->array);
+  map->count = 0;
   map->capacity = 0;
-  map->entries = NULL;
-  map->key_size = 0;
+  map->array = NULL;
   map->value_size = 0;
 } 
 
-uint32_t ratMapAdd(struct ratMap *map, struct rat newElement){
-	if(map->head+1>map->capacity){
-		if (!resizeMap(map))return 0;
-	}
 
-	uint32_t index=hash(*newElement.name, strlen(newElement.name));
+int rResizeMap(struct rMap *map){
+	uint32_t newCapacity=map->capacity*2;
+
+	uint8_t *oldArray = (uint8_t *)map->array;
+  	uint8_t *newArray = malloc(newCapacity * map->value_size);
+
+  	// Zero out new buffer
+  	memset(newArray, 0, newCapacity * map->value_size);
+  	map->count = 0;
+
+	for (int i = 0; i < map->capacity; i++) {
+		if(map->array[i].name==NULL){continue;}
+		uint32_t index =hash(map->array[i].name, strlen(map->array[i].name))%newCapacity;
+		index=rLinearProbe(newArray, map->array[i].name, index, newCapacity);
+		uint8_t *dest = newArray + index * map->value_size;
+		uint8_t *src = (uint8_t *)&map->array[i];
+
+		memcpy(dest, src, map->key_size);
+		map->count++;
+  	}
+
+  free(map->array);
+  map->array = newArray;
+  map->capacity = newCapacity;
 
 }
+
+uint32_t rLinearProbe(struct rat *array, char newElement[], uint32_t index, int capacity){	
+	if(array[index].name==NULL||strcmp(array[index].name, newElement)==0||strcmp(array[index].name, "tombstone")==0){return index;}
+	uint32_t origionalIndex=index;
+	index=(index+1)%capacity;
+	while(index!=origionalIndex){
+		if(strcmp(array[index].name, newElement)==0||strcmp(array[index].name, "tombstone")==0){return index;}
+		index=(index+1)%capacity;
+	}
+	printf("error finding availible spot in hashmap");
+	return -1;
+}
+
+uint32_t rMapAdd(struct rMap *map, struct rat newElement){
+	if(map->count+1>map->capacity){
+		if (!rResizeMap(&map))return 0;
+	}	
+	uint32_t index=hash(*newElement.name, strlen(newElement.name));
+	index=sLinearProbe(map->array, newElement.name, index, map->capacity);
+}
+
 
 //stack behavior, takes array and headPointer
 int iHasNext(struct iStack *stack){
