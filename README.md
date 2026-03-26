@@ -12,3 +12,6 @@ You'll find the basic syntax rules defined in the RatsInARoom.drawio file, and t
 Both are more written from a development perspective rather than an explanatory persective. I'll probably write some more explanatory documentation once it's finished.
 
 The RatsInARoom.c file is the compiler, it transpiles to C and then lets the GCC take it from there. Or at least it will once it's done, for the moment it just does lexical analysis, tokenizes the source code, and does the syntax analysis.
+
+I've also included two demo files, firstly helloWorldDemo.rr which shows how hello world would be written in RatsInARoom.  
+And loopDemo.rr, which shows how the crazy statements work as a loop. Note based on how the rng works you could end up with a lot of differnt things being printed. maybe it will keep looping back to opening Crazy?; line, and printing 1 over and over again. Maybe it will immediately jump to the closing Crazy?; statement, ending the program. Or maybe it will go infinite, looping between the first three crazy's until it crashes.
