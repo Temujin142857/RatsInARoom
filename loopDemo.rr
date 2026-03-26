@@ -1,0 +1,11 @@
+Crazy?;
+RubberRoom.spawn(rat1);
+RubberRoom.rat1.hold(0);
+
+Crazy;
+RubberRoom.rat1.hold(RubberRoom.rat1.take()+1);
+RubberRoom.rat1.speak();
+Crazy;
+
+RubberRoom.rat1.speak();
+Crazy?;
