@@ -40,8 +40,8 @@ const char symbols[AMOUNTOFSYMBOLS][10]={";", "Crazy\?","RubberRoom", "speak", "
 #define OPENBRACKET 12
 #define CLOSEBRACKET 13
 
-const int symbolsFoot=1;
-const int variablesFoot=symbolsFoot+AMOUNTOFSYMBOLS;
+#define SYMBOLSFOOT 1
+const int variablesFoot = SYMBOLSFOOT+AMOUNTOFSYMBOLS;
 /*
 const int literalsFoot=iRatsFoot+MAXRATS;
 int iLiteralsFoot=iRatsFoot+MAXRATS;
@@ -283,7 +283,8 @@ int paramsAnalyser(char params[], int *output, int single){
 		//TODO Implement hashing
 		else if(isalpha(params[0])){
 			//first make sure it starts with RubberRoom.
-			const int wordlength=10; char temp[wordlength];
+			const int wordlength=10;
+			char temp[wordlength];
 			for (size_t i = 0; i < wordlength; i++)
 			{
 				temp[i]=params[i];
